@@ -1,0 +1,193 @@
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
+import { getMarkets, refreshMarkets } from '../../api'
+import Card from '../Card'
+import Spinner from '../Spinner'
+import InfoTooltip from '../InfoTooltip'
+
+interface Market {
+  source: string
+  question: string
+  yes_pct: number
+  no_pct: number
+  volume_usd: number
+  category: string
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Economy & Finance': '#22c55e',
+  'Politics':          '#f59e0b',
+  'Technology & AI':   '#6366f1',
+  'World Affairs':     '#0ea5e9',
+  'Health & Science':  '#ec4899',
+  'General':           '#94a3b8',
+}
+
+const SOURCE_COLORS: Record<string, string> = {
+  'Kalshi':     '#8b5cf6',
+  'Polymarket': '#0ea5e9',
+}
+
+function fmtVolume(v: number): string {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000)     return `$${(v / 1_000).toFixed(0)}K`
+  return `$${v.toFixed(0)}`
+}
+
+interface Props {
+  collapsed?: boolean
+  onToggleCollapse?: () => void
+}
+
+export default function MarketPulse({ collapsed = false, onToggleCollapse }: Props) {
+  const [markets, setMarkets]       = useState<Market[]>([])
+  const [capturedAt, setCapturedAt] = useState<string | null>(null)
+  const [loading, setLoading]       = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    getMarkets()
+      .then(d => {
+        setMarkets(d.markets || [])
+        setCapturedAt(d.captured_at || null)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const d = await refreshMarkets()
+      if (d.status === 'error') {
+        toast.error(`Markets fetch failed: ${d.message}`)
+      } else {
+        setMarkets(d.markets || [])
+        setCapturedAt(d.captured_at || null)
+        toast.success(`Loaded ${(d.markets || []).length} markets`)
+      }
+    } catch (e) {
+      toast.error('Could not reach market APIs.')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  return (
+    <Card accent="#8b5cf6">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-slate-200 font-semibold">
+          📊 Prediction Market Pulse
+          <InfoTooltip text="Live prediction market data from Kalshi and Polymarket — real money bets on real outcomes. Higher volume = stronger conviction." />
+        </h3>
+        <div className="flex items-center gap-2">
+          {!collapsed && (
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+            >
+              {refreshing ? <Spinner size={14} /> : '⚡'}
+              {refreshing ? 'Fetching…' : 'Refresh Now'}
+            </button>
+          )}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700"
+              title={collapsed ? 'Expand' : 'Collapse'}
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+                  transition: 'transform 0.2s',
+                }}
+              >
+                ▼
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!collapsed && capturedAt && (
+        <p className="text-slate-500 text-xs mb-4">
+          Top 5 Kalshi + top 5 Polymarket by trading volume — updated {new Date(capturedAt + 'Z').toLocaleString()}
+        </p>
+      )}
+      {!collapsed && !capturedAt && !loading && (
+        <p className="text-slate-500 text-xs mb-4">Real-money prediction markets from Kalshi and Polymarket</p>
+      )}
+
+      {!collapsed && loading ? (
+        <div className="flex justify-center py-8"><Spinner size={28} /></div>
+      ) : !collapsed && markets.length === 0 ? (
+        <div className="text-center py-8 space-y-3">
+          <p className="text-slate-400 text-sm">No market data yet.</p>
+          <p className="text-slate-600 text-xs max-w-xs mx-auto">
+            Click Refresh to fetch live data from Kalshi and Polymarket.
+            If both APIs are unreachable, this section will remain empty.
+          </p>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 mx-auto bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white text-sm px-5 py-2.5 rounded-xl transition-colors"
+          >
+            {refreshing && <Spinner size={14} />}
+            {refreshing ? 'Fetching…' : '↻ Fetch Markets Now'}
+          </button>
+        </div>
+      ) : !collapsed ? (
+        <div className="space-y-3">
+          {markets.map((m, i) => {
+            const color = CATEGORY_COLORS[m.category] || '#94a3b8'
+            return (
+              <div key={i} className="bg-slate-700 border border-slate-600 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: (SOURCE_COLORS[m.source] || '#94a3b8') + '25',
+                        color: SOURCE_COLORS[m.source] || '#94a3b8',
+                      }}
+                    >
+                      {m.source}
+                    </span>
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: color + '18', color }}
+                    >
+                      {m.category}
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-500 shrink-0">{fmtVolume(m.volume_usd)} traded</span>
+                </div>
+
+                <p className="text-slate-200 text-sm leading-relaxed mb-3">{m.question}</p>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400 text-xs font-bold w-14 shrink-0">YES {m.yes_pct.toFixed(0)}%</span>
+                  <div className="flex-1 h-2 bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(Math.max(m.yes_pct, 2), 98)}%`,
+                        background: 'linear-gradient(90deg,#16a34a,#4ade80)',
+                      }}
+                    />
+                  </div>
+                  <span className="text-red-400 text-xs font-bold w-14 shrink-0 text-right">NO {m.no_pct.toFixed(0)}%</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
+    </Card>
+  )
+}
