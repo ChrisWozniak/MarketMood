@@ -6,139 +6,157 @@ across multiple platforms, uses Claude AI to analyze sentiment by topic category
 barometer showing whether public mood is positive, negative, or neutral — then connects that mood
 signal to investment implications and technology momentum trends.
 
-This project was started in April 2026 and is based on code copied from the "Home PC news digest"
-project located at: `C:\Users\k8woz\OneDrive\Documents\Home PC news digest\`
+Started April 2026. Based on code copied from News Digest (`C:\Users\k8woz\OneDrive\Documents\Home PC news digest\`).
+News Digest remains intact and runs independently.
 
 ---
 
-## Current State
-- Codebase is a direct copy of the News Digest project — no MoodMarket-specific changes made yet
-- News Digest is kept intact and still runs independently
-- Development on MoodMarket starts from this copy as a base
+## Current State (as of April 2026)
+
+### Backend — COMPLETE
+All backend files have been adapted for MoodMarket. The backend is ready to run.
+
+### Frontend — NOT STARTED YET
+Frontend still contains News Digest components. Next work session starts here.
+New components to build: `CategoryBarometer`, `InvestmentSignal`, `TechMomentum`, `CategoryDetail`.
+Files to replace: `App.tsx`, `store.ts`, `api.ts`, `Dashboard.tsx`, `Settings.tsx`, `SocialDashboard.tsx`.
 
 ---
 
-## Core Categories to Track
-- Economy (gas prices, inflation, unemployment, interest rates, housing, tariffs)
+## Core Categories
+- Economy (inflation, interest rates, housing, tariffs, unemployment)
 - Politics (elections, policy, regulation, geopolitical events, sanctions)
 - Prediction Markets (Kalshi, Polymarket — probability shifts, crowd wisdom)
-- Daily Hot Topics (Reddit, Telegram, Bluesky, HackerNews — updated hourly)
-- Sector Sentiment (energy, tech, healthcare, consumer goods, real estate → mapped to stocks/ETFs)
+- Daily Hot Topics (Reddit, HN — catch-all for trending discussions)
+- Sector Sentiment (energy, tech, healthcare, real estate → stocks/ETFs)
 - Technology & AI (model releases, developer sentiment, enterprise adoption, AI regulation)
 - Blockchain & Crypto (Ethereum, Solana, Bitcoin, DeFi, NFT, Web3 vs TradFi)
 
 ---
 
-## What to Reuse from News Digest (already copied here)
+## Backend Architecture (DONE)
 
-### Backend — keep mostly as-is, adapt:
-- `backend/services/social/reddit_client.py` — change subreddit lists for MoodMarket categories
-- `backend/services/social/hackernews_client.py` — change category keywords
-- `backend/services/social/markets_client.py` — Kalshi + Polymarket, use as-is
-- `backend/services/social/trend_analyzer.py` — trend history + momentum, use as-is
-- `backend/services/social/mood_scorer.py` — keep logic, upgrade prompts for investment signals
-- `backend/services/social/aggregator.py` — orchestration pattern, extend for new sources
-- `backend/services/scheduler.py` — keep APScheduler, tune to hourly refresh
+### Files — keep as-is (no further changes needed)
+- `backend/services/social/reddit_client.py` — MoodMarket subreddits already set per category
+- `backend/services/social/hackernews_client.py` — MoodMarket category keywords already set
+- `backend/services/social/markets_client.py` — Kalshi + Polymarket, unchanged
+- `backend/services/social/trend_analyzer.py` — trend history + momentum, unchanged
+- `backend/services/social/aggregator.py` — orchestrates all sources, calls Claude signals
+- `backend/services/social/youtube_client.py` — YouTube video search, unchanged
 
-### Backend — remove or repurpose (News Digest specific, not needed for MoodMarket):
-- `backend/services/email_sender.py` — no email delivery in MoodMarket
-- `backend/services/news_fetcher.py` — no RSS/NewsAPI digest in MoodMarket
-- `backend/services/summarizer.py` — no email digest needed
-- `backend/routers/digest.py` — replace with sentiment/signals routers
-- `backend/routers/config.py` — replace with MoodMarket settings
+### Files — already adapted for MoodMarket
+- `backend/main.py` — FastAPI app, 3 routers: sentiment, signals, social
+- `backend/models.py` — Only 2 tables: `SocialSnapshot`, `MarketSnapshot` (DigestRun/Settings removed)
+- `backend/services/scheduler.py` — Hourly social analysis auto-scheduler (APScheduler)
+- `backend/services/social/mood_scorer.py` — Uses Claude Haiku for sentiment scoring (was Groq)
+- `backend/services/investment_signals.py` — NEW: Claude Sonnet maps mood → sector/ticker signals
+- `backend/services/tech_momentum.py` — NEW: Claude Sonnet tracks tech direction week-over-week
+- `backend/routers/sentiment.py` — NEW: `/api/sentiment/analyze`, `/api/sentiment/latest`
+- `backend/routers/signals.py` — NEW: `/api/signals/latest`, `/api/signals/generate`
+- `backend/routers/social.py` — kept from News Digest for markets endpoints
 
-### Frontend — keep as-is:
-- `frontend/src/components/social/MoodGauge.tsx` — radial gauge IS the barometer widget
+### Files — removed (News Digest only)
+- `backend/services/email_sender.py` — deleted
+- `backend/services/news_fetcher.py` — deleted
+- `backend/services/summarizer.py` — deleted
+- `backend/routers/digest.py` — deleted
+- `backend/routers/config.py` — deleted
+
+### API Endpoints
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/sentiment/analyze` | Trigger full social analysis + Claude scoring |
+| GET | `/api/sentiment/latest` | All barometer scores + trending topics |
+| GET | `/api/sentiment/history` | Recent snapshots for momentum tracking |
+| GET | `/api/signals/latest` | Claude investment signals + tech momentum |
+| POST | `/api/signals/generate` | Re-run Claude analysis on latest snapshot |
+| GET | `/api/social/markets` | Kalshi + Polymarket prediction markets |
+| POST | `/api/social/markets/refresh` | Refresh market data only |
+| GET | `/api/health` | Health check |
+
+---
+
+## Frontend Architecture (TODO — next session)
+
+### Keep as-is (no changes needed)
+- `frontend/src/components/social/MoodGauge.tsx` — radial gauge, IS the barometer widget
 - `frontend/src/components/social/MarketPulse.tsx` — prediction markets panel
-- `frontend/src/components/social/TrendingTopics.tsx` — add momentum column
-- `frontend/src/components/Card.tsx` — universal wrapper
+- `frontend/src/components/social/TrendingTopics.tsx` — topic list (add momentum column)
+- `frontend/src/components/Card.tsx` — universal card wrapper
 - `frontend/src/components/Spinner.tsx`
 - `frontend/src/components/InfoTooltip.tsx`
-- `frontend/src/tickerList.ts` — needed for investment signal sector/ticker mapping
+- `frontend/src/tickerList.ts` — investment signal ticker mapping
 - `frontend/src/index.css` — full Tailwind dark/light mode system
 
-### Frontend — replace/rebuild:
+### Replace (still contain News Digest code)
+- `frontend/src/App.tsx` — keep sticky header/dark mode/collapse pattern, update nav sections
+- `frontend/src/store.ts` — keep Zustand pattern, replace state slices for MoodMarket
+- `frontend/src/api.ts` — keep Axios pattern, point to new MoodMarket endpoints
 - `frontend/src/components/Dashboard.tsx` — replace with CategoryBarometer view
-- `frontend/src/components/Settings.tsx` — replace with source preferences + category toggles
+- `frontend/src/components/Settings.tsx` — replace with lightweight source preferences panel
 - `frontend/src/components/social/SocialDashboard.tsx` — replace with MoodMarket main dashboard
-- `frontend/src/store.ts` — keep Zustand pattern, replace state slices
-- `frontend/src/api.ts` — keep Axios pattern, replace endpoints
+
+### New components to build
+- `frontend/src/components/CategoryBarometer.tsx` — full-width barometer per category (main view)
+- `frontend/src/components/InvestmentSignal.tsx` — Claude-generated insight cards per category
+- `frontend/src/components/TechMomentum.tsx` — week-over-week momentum for technologies/companies
+- `frontend/src/components/CategoryDetail.tsx` — drill-down per category with platform breakdown
 
 ---
 
-## New Things to Build
+## Tech Stack
 
-### New Data Sources (backend)
-- `services/social/stocktwits_client.py` — cashtag sentiment (REST, no auth)
-- `services/social/bluesky_client.py` — AT Protocol public API
-- `services/social/telegram_client.py` — Telethon library, public crypto/AI channels
-- `services/social/pytrends_client.py` — Google Trends search volume
-- YouTube comments on major tech announcements (different from current video search in youtube_client.py)
-- Truth Social high-profile public accounts (optional, lower priority)
+| Component | Value |
+|-----------|-------|
+| Backend | FastAPI + SQLite (SQLModel) |
+| AI — sentiment scoring | Claude Haiku (`claude-haiku-4-5-20251001`) |
+| AI — investment signals | Claude Sonnet (`claude-sonnet-4-6`) |
+| AI — tech momentum | Claude Sonnet (`claude-sonnet-4-6`) |
+| Social data | Reddit (public JSON), HackerNews (Algolia), YouTube (Data API v3) |
+| Market data | Kalshi API, Polymarket API |
+| Scheduler | APScheduler — hourly social analysis |
+| Frontend | React 19 + Zustand + Recharts + Tailwind CSS v4 |
+| Build | Vite + TypeScript |
 
-### New Backend Services
-- `services/investment_signals.py` — Claude maps topic sentiment → sector/ticker implications
-- `services/tech_momentum.py` — Claude tracks week-over-week technology enthusiasm (directional)
-- New routers: `routers/sentiment.py`, `routers/signals.py`
-
-### New Frontend Components
-- `components/CategoryBarometer.tsx` — full-width barometer per category (main view)
-- `components/InvestmentSignal.tsx` — Claude-generated insight cards
-- `components/TechMomentum.tsx` — week-over-week momentum chart for technologies/companies
-- `components/CategoryDetail.tsx` — drill-down per category with platform breakdown
+Note: MongoDB Atlas was originally planned but SQLite kept for simplicity —
+can migrate later if data volume requires it.
 
 ---
 
-## Tech Stack Changes vs News Digest
-
-| Component | News Digest (source) | MoodMarket (target) |
-|-----------|---------------------|----------------------|
-| Database | SQLite | MongoDB Atlas |
-| AI model | Groq llama-3.3-70b | Claude claude-sonnet-4-6 |
-| Data sources | Reddit, HN, YouTube, Kalshi, Polymarket | All above + StockTwits, Bluesky, Telegram, Google Trends |
-| Email delivery | Yes (Gmail SMTP) | No |
-| Investment signals | No | Yes (new) |
-| Tech momentum tracking | No | Yes (new, directional week-over-week) |
-
----
-
-## Key Design Decisions Made
-- MongoDB Atlas (not SQLite) for posts + mood_snapshots collections — better for time-series sentiment data at scale
-- Claude API (not Groq) for the investment signal and momentum layers — deeper reasoning needed
-- Frontend served from FastAPI static files in production (same pattern as News Digest)
-- No email feature — MoodMarket is a live dashboard only
-- Ethical guardrails: aggregate scores only, no individual user profiles, disclaimer on all insights
-
----
-
-## Environment Variables Needed (create backend/.env)
+## Environment Variables (create `backend/.env`)
 ```
-# AI
-ANTHROPIC_API_KEY=        # claude.ai -> API Keys
-
-# Data Sources
-REDDIT_CLIENT_ID=         # reddit.com/prefs/apps -> create app
-REDDIT_CLIENT_SECRET=
+ANTHROPIC_API_KEY=        # claude.ai -> Settings -> API Keys
 YOUTUBE_API_KEY=          # console.cloud.google.com -> YouTube Data API v3
-NEWSAPI_KEY=              # newsapi.org (optional)
-
-# MongoDB
-MONGODB_URI=              # MongoDB Atlas connection string
-
-# Optional
-TELEGRAM_API_ID=          # my.telegram.org -> App configuration
-TELEGRAM_API_HASH=
 FRONTEND_URL=http://localhost:8000
+DATABASE_URL=sqlite:///./moodmarket.db
+```
+
+---
+
+## How to Run (development)
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1    # or: python -m venv venv first
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+Frontend dev server (separate terminal):
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
 ## What Makes MoodMarket Unique
 Every competitor tracks either brand sentiment OR market signals OR technology trends separately.
-MoodMarket connects everyday social conversation across all categories through a single AI reasoning
-layer that links mood → investment signals AND technology momentum in one dashboard.
+MoodMarket connects everyday social conversation across all categories through a single Claude AI
+reasoning layer that links mood → investment signals AND technology momentum in one dashboard.
 
-The Technology & AI category has a unique "momentum layer": not just current sentiment but
-directional confidence — is enthusiasm growing or fading week-over-week after each major model
-release, which companies are winning the narrative, which blockchain platforms are gaining developer
-mindshare.
+The Technology & AI category has a unique momentum layer: not just current sentiment but directional
+confidence — is enthusiasm growing or fading after each model release, which companies are winning
+the narrative, which blockchain platforms are gaining developer mindshare.
+
+Ethical guardrails: aggregate scores only, no individual user profiles stored, all insights include
+disclaimer that they are informational not financial advice.
