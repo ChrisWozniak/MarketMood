@@ -23,6 +23,29 @@ Files to replace: `App.tsx`, `store.ts`, `api.ts`, `Dashboard.tsx`, `Settings.ts
 
 ---
 
+## Database Decision: SQLite now, MongoDB later
+
+**Current:** SQLite (kept for simplicity during development — fast, local, no setup needed)
+
+**Original plan was MongoDB Atlas** — still the right long-term choice. Switch when raw posts
+collection is added (Reddit/HN/StockTwits raw data). At that point free tier fills in ~3 weeks.
+
+### MongoDB Atlas tier guide (when ready to switch)
+| Phase | Tier | Cost | Storage |
+|-------|------|------|---------|
+| Snapshots only (current) | Free M0 | $0 | 512 MB — lasts ~4 years |
+| Raw posts added | M2 | $9/mo | 2 GB |
+| At scale | M10 | $57/mo | 10 GB |
+
+### To switch to MongoDB, provide:
+1. Create free account at cloud.mongodb.com
+2. Create M0 cluster → Connect → Drivers → copy connection string:
+   `mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/`
+3. Add to `backend/.env` as `MONGODB_URI=...`
+4. Claude will replace `database.py` and `models.py` with Motor (async MongoDB driver)
+
+---
+
 ## Core Categories
 - Economy (inflation, interest rates, housing, tariffs, unemployment)
 - Politics (elections, policy, regulation, geopolitical events, sanctions)
