@@ -93,13 +93,21 @@ async def run_social_analysis() -> SocialSnapshot:
     flat_history = {cat: data["volumes"][-1] if data["volumes"] else 0
                    for cat, data in trend_history_raw.items()}
 
-    # 7. Save snapshot
+    # 7. Generate investment signals and tech momentum via Claude
+    from services.investment_signals import generate_investment_signals
+    from services.tech_momentum import generate_tech_momentum
+    investment_signals = await generate_investment_signals(mood_scores, ranked_topics)
+    tech_momentum = await generate_tech_momentum(ranked_topics)
+
+    # 8. Save snapshot
     snapshot = SocialSnapshot(
         captured_at=datetime.utcnow(),
         platform_data=json.dumps({
             "reddit_categories": list(reddit_data.keys()),
             "hn_categories": list(hn_data.keys()),
             "youtube_categories": list(youtube_data.keys()),
+            "investment_signals": investment_signals,
+            "tech_momentum": tech_momentum,
         }),
         trending_topics=json.dumps(ranked_topics),
         mood_scores=json.dumps(mood_scores),

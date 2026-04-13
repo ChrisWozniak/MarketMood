@@ -11,53 +11,45 @@ HN_ALGOLIA = "https://hn.algolia.com/api/v1/search"
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "Technology & AI": [
-        "ai", "gpt", "llm", "openai", "machine learning", "deep learning",
-        "nvidia", "chip", "semiconductor", "quantum", "programming", "software",
-        "hardware", "startup", "apple", "google", "microsoft", "meta",
-        "github", "linux", "rust", "python", "javascript", "developer", "code",
-        "open source", "database", "cloud", "security", "vulnerability", "hack",
+        "ai", "gpt", "llm", "openai", "anthropic", "claude", "gemini",
+        "machine learning", "deep learning", "nvidia", "chip", "semiconductor",
+        "agent", "multimodal", "open source", "developer", "github", "model",
+        "inference", "fine-tune", "transformer", "benchmark", "rag",
     ],
-    "Economy & Finance": [
-        "bitcoin", "crypto", "stock", "market", "economy", "inflation", "fed",
-        "interest rate", "recession", "ipo", "venture", "layoff", "job",
-        "gdp", "trade", "tariff", "debt", "bank", "fintech", "dollar",
-        "funding", "revenue", "profit", "loss", "acquisition", "merger",
+    "Blockchain & Crypto": [
+        "bitcoin", "ethereum", "solana", "crypto", "blockchain", "defi",
+        "nft", "web3", "token", "wallet", "stablecoin", "dao", "layer 2",
+        "smart contract", "coinbase", "binance", "sec crypto", "etf bitcoin",
     ],
-    "Science": [
-        "space", "nasa", "spacex", "mars", "asteroid", "telescope",
-        "physics", "biology", "chemistry", "genome", "dna", "study",
-        "research", "discovery", "science", "climate", "quantum",
-        "particle", "universe", "planet", "satellite",
+    "Economy": [
+        "inflation", "fed", "interest rate", "recession", "gdp", "tariff",
+        "trade war", "layoff", "unemployment", "housing market", "mortgage",
+        "consumer spending", "cpi", "debt", "dollar", "treasury", "bank",
     ],
     "Politics": [
-        "trump", "biden", "election", "congress", "senate", "president",
-        "law", "court", "supreme", "policy", "government", "war", "ukraine",
-        "russia", "china", "israel", "iran", "eu", "nato", "democrat",
-        "republican", "white house", "minister", "parliament",
+        "trump", "election", "congress", "senate", "president", "policy",
+        "government", "war", "ukraine", "russia", "china", "iran", "nato",
+        "regulation", "sanction", "geopolitics", "supreme court", "parliament",
     ],
-    "Health & Wellness": [
-        "health", "cancer", "vaccine", "drug", "fda", "medicine",
-        "mental health", "pandemic", "disease", "hospital", "therapy",
-        "study", "clinical", "treatment", "obesity", "longevity",
+    "Sector Sentiment": [
+        "stock", "market", "ipo", "earnings", "revenue", "acquisition",
+        "merger", "energy", "oil", "healthcare", "pharma", "real estate",
+        "semiconductor", "ev", "tesla", "apple", "google", "microsoft",
     ],
-    "Environment & Climate": [
-        "climate", "environment", "renewable", "solar", "wind energy",
-        "carbon", "emissions", "wildfire", "flood", "temperature",
-        "fossil fuel", "electric vehicle", "ev", "green",
+    "Prediction Markets": [
+        "prediction market", "kalshi", "polymarket", "odds", "probability",
+        "forecast", "betting", "election odds", "fed rate odds",
     ],
-    "Entertainment": [
-        "game", "gaming", "movie", "film", "music", "book", "show",
-        "streaming", "netflix", "disney", "award", "artist", "creator",
-    ],
+    "Daily Hot Topics": [],  # catch-all for unmatched stories
 }
 
 
 def _categorize(title: str) -> str:
     lower = title.lower()
     for cat, keywords in CATEGORY_KEYWORDS.items():
-        if any(kw in lower for kw in keywords):
+        if keywords and any(kw in lower for kw in keywords):
             return cat
-    return "Technology & AI"  # HN default
+    return "Daily Hot Topics"
 
 
 async def fetch_hackernews_posts(top_n: int = 60) -> dict[str, list[dict]]:

@@ -1,5 +1,5 @@
 """
-Reddit social signal client.
+Reddit social signal client for MoodMarket.
 Uses the public JSON API (no auth required for public subreddits).
 Endpoint: https://www.reddit.com/r/{sub}/hot.json?limit=25
 """
@@ -7,15 +7,13 @@ import asyncio
 import httpx
 
 CATEGORY_SUBREDDITS: dict[str, list[str]] = {
-    "Politics": ["politics", "worldnews", "PoliticalDiscussion", "news", "geopolitics"],
-    "Economy & Finance": ["investing", "economics", "personalfinance", "stocks", "wallstreetbets", "financialindependence"],
-    "Technology & AI": ["technology", "artificial", "MachineLearning", "ChatGPT", "singularity", "programming", "compsci"],
-    "Entertainment": ["entertainment", "movies", "television", "Music", "gaming", "anime"],
-    "Health & Wellness": ["health", "science", "medicine", "nutrition", "mentalhealth"],
-    "Environment & Climate": ["environment", "climate", "sustainability", "ClimateChange"],
-    "Sports": ["sports", "nfl", "nba", "soccer", "baseball", "hockey"],
-    "Science": ["science", "physics", "space", "biology", "chemistry", "askscience"],
-    "Memes & Viral": ["memes", "interestingasfuck", "todayilearned", "AskReddit", "worldnews"],
+    "Economy": ["economics", "investing", "personalfinance", "stocks", "wallstreetbets", "economy", "inflation"],
+    "Politics": ["politics", "worldnews", "PoliticalDiscussion", "geopolitics", "NeutralPolitics"],
+    "Prediction Markets": ["predictionmarkets", "Kalshi", "polymarket", "futuresandoptions"],
+    "Daily Hot Topics": ["AskReddit", "todayilearned", "news", "worldnews", "interestingasfuck"],
+    "Sector Sentiment": ["realestate", "energy", "healthcare", "dividends", "ETFs"],
+    "Technology & AI": ["artificial", "MachineLearning", "ChatGPT", "singularity", "LocalLLaMA", "OpenAI", "Anthropic"],
+    "Blockchain & Crypto": ["CryptoCurrency", "ethereum", "Bitcoin", "solana", "defi", "web3"],
 }
 
 HEADERS = {

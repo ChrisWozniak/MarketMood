@@ -7,25 +7,23 @@ import os
 
 load_dotenv()
 
-from database import create_db_and_tables, engine
-from services.scheduler import scheduler, load_schedule_from_db, REPORTS_DIR
-from routers import digest, config, social
+from database import create_db_and_tables
+from services.scheduler import scheduler, start_social_schedule
+from routers import sentiment, signals, social
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     create_db_and_tables()
-    load_schedule_from_db()
+    start_social_schedule(refresh_hours=1)
     scheduler.start()
     yield
-    # Shutdown
     scheduler.shutdown(wait=False)
 
 
-app = FastAPI(title="News Digest API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="MoodMarket API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,13 +33,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
-app.include_router(config.router, prefix="/api/settings", tags=["settings"])
-app.include_router(social.router, prefix="/api/social", tags=["social"])
-
-# Serve saved HTML report files
-os.makedirs(REPORTS_DIR, exist_ok=True)
-app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
+app.include_router(sentiment.router, prefix="/api/sentiment", tags=["sentiment"])
+app.include_router(signals.router,   prefix="/api/signals",   tags=["signals"])
+app.include_router(social.router,    prefix="/api/social",    tags=["social"])
 
 
 @app.get("/api/health")
