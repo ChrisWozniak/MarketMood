@@ -16,10 +16,17 @@ News Digest remains intact and runs independently.
 ### Backend — COMPLETE
 All backend files have been adapted for MoodMarket. The backend is ready to run.
 
-### Frontend — NOT STARTED YET
-Frontend still contains News Digest components. Next work session starts here.
-New components to build: `CategoryBarometer`, `InvestmentSignal`, `TechMomentum`, `CategoryDetail`.
-Files to replace: `App.tsx`, `store.ts`, `api.ts`, `Dashboard.tsx`, `Settings.tsx`, `SocialDashboard.tsx`.
+### Frontend — IN PROGRESS (session 2)
+Core shell complete. News Digest code replaced in all 5 target files.
+Next session: build new components (`CategoryBarometer`, `InvestmentSignal`, `TechMomentum`, `CategoryDetail`)
+and wire up `Dashboard.tsx` (currently unused/orphaned — can delete or repurpose).
+
+#### Files replaced this session (News Digest → MoodMarket)
+- `frontend/src/api.ts` — all MoodMarket endpoints wired (sentiment, signals, markets, health)
+- `frontend/src/store.ts` — trimmed to darkMode + panelCollapse + loading (removed activeTab, settingsDirty)
+- `frontend/src/App.tsx` — MoodMarket header, removed Digest section, single-page scroll
+- `frontend/src/components/social/SocialDashboard.tsx` — full rewrite: mood gauges + investment signals + tech momentum + trending topics + markets; loads sentiment + signals in parallel
+- `frontend/src/components/Settings.tsx` — lightweight info panel: data sources, categories, schedule, health ping, disclaimer
 
 ---
 
@@ -112,12 +119,14 @@ collection is added (Reddit/HN/StockTwits raw data). At that point free tier fil
 - `frontend/src/index.css` — full Tailwind dark/light mode system
 
 ### Replace (still contain News Digest code)
-- `frontend/src/App.tsx` — keep sticky header/dark mode/collapse pattern, update nav sections
-- `frontend/src/store.ts` — keep Zustand pattern, replace state slices for MoodMarket
-- `frontend/src/api.ts` — keep Axios pattern, point to new MoodMarket endpoints
-- `frontend/src/components/Dashboard.tsx` — replace with CategoryBarometer view
-- `frontend/src/components/Settings.tsx` — replace with lightweight source preferences panel
-- `frontend/src/components/social/SocialDashboard.tsx` — replace with MoodMarket main dashboard
+- `frontend/src/components/Dashboard.tsx` — currently orphaned/unused; replace with CategoryBarometer view or delete
+
+### Already replaced (done)
+- `frontend/src/App.tsx` — MoodMarket header, single-page scroll, no Digest section
+- `frontend/src/store.ts` — trimmed to darkMode + panelCollapse + loading
+- `frontend/src/api.ts` — all MoodMarket endpoints
+- `frontend/src/components/Settings.tsx` — lightweight info panel
+- `frontend/src/components/social/SocialDashboard.tsx` — full MoodMarket dashboard
 
 ### New components to build
 - `frontend/src/components/CategoryBarometer.tsx` — full-width barometer per category (main view)

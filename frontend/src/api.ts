@@ -2,19 +2,26 @@ import axios from 'axios'
 
 const api = axios.create({ baseURL: '/api' })
 
-export const getSettings = () => api.get('/settings').then(r => r.data)
-export const saveSettings = (data: Record<string, unknown>) => api.put('/settings', data).then(r => r.data)
-export const testEmail = () => api.post('/settings/test-email').then(r => r.data)
-export const searchTickers = (q: string) => api.get(`/settings/ticker-search?q=${encodeURIComponent(q)}`).then(r => r.data)
-export const getNextRun = () => api.get('/digest/next-run').then(r => r.data)
+// ── Sentiment / Barometer ──────────────────────────────────────────────────
+// Trigger full social analysis + Claude scoring (slow — 30–90s)
+export const analyzeSentiment = () => api.post('/sentiment/analyze').then(r => r.data)
+// Latest barometer scores + trending topics for all categories
+export const getLatestSentiment = () => api.get('/sentiment/latest').then(r => r.data)
+// Recent snapshots for momentum tracking (default last 24)
+export const getSentimentHistory = (limit = 24) =>
+  api.get(`/sentiment/history?limit=${limit}`).then(r => r.data)
 
-export const runNow = () => api.post('/digest/run-now').then(r => r.data)
-export const getHistory = (limit = 20) => api.get(`/digest/history?limit=${limit}`).then(r => r.data)
-export const getDigestRun = (id: number) => api.get(`/digest/history/${id}`).then(r => r.data)
+// ── Investment Signals ─────────────────────────────────────────────────────
+// Claude-generated signals + tech momentum based on latest snapshot
+export const getLatestSignals = () => api.get('/signals/latest').then(r => r.data)
+// Re-run Claude signal analysis on latest snapshot
+export const generateSignals = () => api.post('/signals/generate').then(r => r.data)
 
-export const analyzeSocial = () => api.post('/social/analyze').then(r => r.data)
-export const getLatestSocial = () => api.get('/social/latest').then(r => r.data)
-export const getMood = () => api.get('/social/mood').then(r => r.data)
+// ── Prediction Markets ─────────────────────────────────────────────────────
+// Kalshi + Polymarket live markets
 export const getMarkets = () => api.get('/social/markets').then(r => r.data)
+// Refresh market data only (fast)
 export const refreshMarkets = () => api.post('/social/markets/refresh').then(r => r.data)
-export const getSocialHistory = () => api.get('/social/history').then(r => r.data)
+
+// ── Health ─────────────────────────────────────────────────────────────────
+export const getHealth = () => api.get('/health').then(r => r.data)
