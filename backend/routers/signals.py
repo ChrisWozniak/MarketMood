@@ -40,13 +40,35 @@ async def generate_signals(session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="No social data available.")
 
     s = snapshots[0]
-    mood_scores = json.loads(s.mood_scores)
+    mood_scores    = json.loads(s.mood_scores)
     trending_topics = json.loads(s.trending_topics)
+    platform_data  = json.loads(s.platform_data)
+
+    # Pull latest prediction markets for signal enrichment
+    from services.social.markets_client import fetch_top_markets
+    from sqlmodel import select as sql_select
+    from models import MarketSnapshot
+    try:
+        market_snapshots = session.exec(
+            sql_select(MarketSnapshot).order_by(MarketSnapshot.id.desc()).limit(1)
+        ).all()
+        prediction_markets = json.loads(market_snapshots[0].markets_json) if market_snapshots else []
+    except Exception:
+        prediction_markets = []
+
+    housing_data = {
+        "fred":   platform_data.get("fred_indicators", {}),
+        "redfin": platform_data.get("redfin_stats", {}),
+    }
 
     from services.investment_signals import generate_investment_signals
     from services.tech_momentum import generate_tech_momentum
 
-    signals = await generate_investment_signals(mood_scores, trending_topics)
+    signals  = await generate_investment_signals(
+        mood_scores, trending_topics,
+        prediction_markets=prediction_markets,
+        housing_data=housing_data,
+    )
     momentum = await generate_tech_momentum(trending_topics)
 
     platform_data = json.loads(s.platform_data)

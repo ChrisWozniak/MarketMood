@@ -100,6 +100,8 @@ async def refresh_markets(session: Session = Depends(get_session)):
             "markets": markets,
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"status": "error", "message": str(e), "markets": []}
 
 

@@ -60,7 +60,7 @@ export default function Settings() {
       {/* ── Categories ── */}
       <Card accent="#f59e0b">
         <h3 className="text-slate-200 font-semibold mb-1">Monitored Categories</h3>
-        <p className="text-slate-500 text-xs mb-4">Each category is scored independently by Claude Haiku</p>
+        <p className="text-slate-500 text-xs mb-4">Each category is scored independently by Gemini Flash</p>
         <div className="space-y-2">
           {CATEGORIES.map(cat => (
             <div key={cat.name} className="flex items-start gap-3 py-2 border-b border-slate-800 last:border-0">

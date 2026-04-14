@@ -9,6 +9,8 @@ from services.social.reddit_client import fetch_reddit_posts
 from services.social.hackernews_client import fetch_hackernews_posts
 from services.social.youtube_client import fetch_youtube_videos
 from services.social.markets_client import fetch_top_markets
+from services.social.fred_client import fetch_fred_housing
+from services.social.redfin_client import fetch_redfin_stats
 from services.social.trend_analyzer import build_trend_history, rank_trending_topics
 from services.social.mood_scorer import score_all_moods, extract_all_sub_topics
 
@@ -29,7 +31,7 @@ def _merge_platforms(*platform_dicts: dict[str, list[dict]]) -> dict[str, list[d
 
 
 async def run_social_analysis() -> SocialSnapshot:
-    """Full pipeline: collect → analyze → save → return snapshot."""
+    """Full pipeline: collect -> analyze -> save -> return snapshot."""
     print("[aggregator] Starting social analysis...")
 
     # 1. Fetch from all sources concurrently
@@ -43,9 +45,11 @@ async def run_social_analysis() -> SocialSnapshot:
         timeout=30.0,
     )
     markets_task = fetch_top_markets(10)
+    fred_task    = fetch_fred_housing()
+    redfin_task  = fetch_redfin_stats()
 
     results = await asyncio.gather(
-        reddit_task, hn_task, youtube_task, markets_task,
+        reddit_task, hn_task, youtube_task, markets_task, fred_task, redfin_task,
         return_exceptions=True,
     )
 
@@ -56,11 +60,24 @@ async def run_social_analysis() -> SocialSnapshot:
     hn_data      = _safe(results[1], {})
     youtube_data = _safe(results[2], {})
     market_data  = _safe(results[3], [])
+    fred_result  = _safe(results[4], {"indicators": {}, "posts": []})
+    redfin_result= _safe(results[5], {"stats": {}, "posts": []})
 
     if isinstance(results[2], BaseException):
         print(f"[aggregator] YouTube fetch failed/timed out: {results[2]}")
     if isinstance(results[3], BaseException):
         print(f"[aggregator] Markets fetch failed: {results[3]}")
+    if isinstance(results[4], BaseException):
+        print(f"[aggregator] FRED fetch failed: {results[4]}")
+    if isinstance(results[5], BaseException):
+        print(f"[aggregator] Redfin fetch failed: {results[5]}")
+
+    # Inject FRED + Redfin data as synthetic posts under Real Estate category
+    real_estate_posts = fred_result.get("posts", []) + redfin_result.get("posts", [])
+    if real_estate_posts:
+        reddit_data.setdefault("Real Estate", [])
+        reddit_data["Real Estate"] = real_estate_posts + reddit_data["Real Estate"]
+        print(f"[aggregator] Real Estate: {len(real_estate_posts)} data posts (FRED + Redfin)")
 
     print(f"[aggregator] Sources: Reddit={sum(len(v) for v in reddit_data.values())} posts, "
           f"HN={sum(len(v) for v in hn_data.values())} stories, "
@@ -96,7 +113,17 @@ async def run_social_analysis() -> SocialSnapshot:
     # 7. Generate investment signals and tech momentum via Claude
     from services.investment_signals import generate_investment_signals
     from services.tech_momentum import generate_tech_momentum
-    investment_signals = await generate_investment_signals(mood_scores, ranked_topics)
+
+    housing_data = {
+        "fred":   fred_result.get("indicators", {}),
+        "redfin": redfin_result.get("stats", {}),
+    }
+    investment_signals = await generate_investment_signals(
+        mood_scores,
+        ranked_topics,
+        prediction_markets=market_data,
+        housing_data=housing_data,
+    )
     tech_momentum = await generate_tech_momentum(ranked_topics)
 
     # 8. Save snapshot
@@ -106,6 +133,8 @@ async def run_social_analysis() -> SocialSnapshot:
             "reddit_categories": list(reddit_data.keys()),
             "hn_categories": list(hn_data.keys()),
             "youtube_categories": list(youtube_data.keys()),
+            "fred_indicators": fred_result.get("indicators", {}),
+            "redfin_stats": redfin_result.get("stats", {}),
             "investment_signals": investment_signals,
             "tech_momentum": tech_momentum,
         }),

@@ -40,6 +40,11 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "prediction market", "kalshi", "polymarket", "odds", "probability",
         "forecast", "betting", "election odds", "fed rate odds",
     ],
+    "Real Estate": [
+        "housing", "mortgage", "rent", "rental", "home price", "home sales",
+        "real estate", "zillow", "redfin", "airbnb", "homebuyer", "eviction",
+        "landlord", "tenant", "property", "foreclosure", "housing market",
+    ],
     "Daily Hot Topics": [],  # catch-all for unmatched stories
 }
 

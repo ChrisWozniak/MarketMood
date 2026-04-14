@@ -3,7 +3,7 @@ import axios from 'axios'
 const api = axios.create({ baseURL: '/api' })
 
 // ── Sentiment / Barometer ──────────────────────────────────────────────────
-// Trigger full social analysis + Claude scoring (slow — 30–90s)
+// Trigger full social analysis + Gemini scoring (slow — 30–90s)
 export const analyzeSentiment = () => api.post('/sentiment/analyze').then(r => r.data)
 // Latest barometer scores + trending topics for all categories
 export const getLatestSentiment = () => api.get('/sentiment/latest').then(r => r.data)
@@ -12,9 +12,9 @@ export const getSentimentHistory = (limit = 24) =>
   api.get(`/sentiment/history?limit=${limit}`).then(r => r.data)
 
 // ── Investment Signals ─────────────────────────────────────────────────────
-// Claude-generated signals + tech momentum based on latest snapshot
+// Gemini-generated signals + tech momentum based on latest snapshot
 export const getLatestSignals = () => api.get('/signals/latest').then(r => r.data)
-// Re-run Claude signal analysis on latest snapshot
+// Re-run Gemini signal analysis on latest snapshot
 export const generateSignals = () => api.post('/signals/generate').then(r => r.data)
 
 // ── Prediction Markets ─────────────────────────────────────────────────────

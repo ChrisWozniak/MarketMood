@@ -8,9 +8,9 @@ import json
 import re
 import os
 from collections import Counter
-import anthropic
+from google import genai as google_genai
 
-_client: anthropic.Anthropic | None = None
+_client = None
 
 MOOD_CATEGORY_LIMIT = 7  # Score all MoodMarket categories
 
@@ -28,30 +28,29 @@ STOP_WORDS = {
 }
 
 
-def get_client() -> anthropic.Anthropic:
+def get_client() -> google_genai.Client:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        _client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     return _client
 
 
-async def _claude_call(prompt: str, max_tokens: int = 300) -> str | None:
-    """Synchronous Claude call run in executor to avoid blocking the event loop."""
+async def _gemini_call(prompt: str, max_tokens: int = 300) -> str | None:
+    """Gemini call run in executor to avoid blocking the event loop."""
     loop = asyncio.get_running_loop()
     try:
         def _call():
-            return get_client().messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}]
+            return get_client().models.generate_content(
+                model="models/gemini-2.0-flash-lite",
+                contents=prompt,
             )
         resp = await asyncio.wait_for(loop.run_in_executor(None, _call), timeout=30.0)
-        return resp.content[0].text.strip()
+        return resp.text.strip()
     except asyncio.TimeoutError:
-        print("[mood_scorer] Claude timed out")
+        print("[mood_scorer] Gemini timed out")
         return None
     except Exception as e:
-        print(f"[mood_scorer] Claude error: {e}")
+        print(f"[mood_scorer] Gemini error: {e}")
         return None
 
 
@@ -113,7 +112,7 @@ Return a JSON object with exactly these fields:
 
 Return only valid JSON."""
 
-    raw = await _claude_call(prompt, max_tokens=300)
+    raw = await _gemini_call(prompt, max_tokens=300)
     if not raw:
         return _score_mood_fallback(category, posts)
 
@@ -224,7 +223,7 @@ async def extract_sub_topics(category: str, posts: list[dict]) -> list[str]:
         "\n\nReturn ONLY a JSON array of short strings. Example: [\"topic1\", \"topic2\"]"
     )
 
-    raw = await _claude_call(prompt, max_tokens=120)
+    raw = await _gemini_call(prompt, max_tokens=120)
     if raw:
         cleaned = raw.strip()
         for fence in ["```json", "```"]:

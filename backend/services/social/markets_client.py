@@ -2,13 +2,21 @@
 Prediction Market Pulse — Kalshi + Polymarket client.
 
 Kalshi:  Query known active series tickers (generic /markets returns untraded stubs)
-         Prices in 0-1 dollar range → multiply by 100 for %
+         Prices in 0-1 dollar range -> multiply by 100 for %
 Polymarket: gamma-api, no auth required, returns outcomePrices as ["0.73","0.27"]
 """
 
 import asyncio
 import json
 import httpx
+
+
+def _print(msg: str) -> None:
+    """Print safely — replaces any characters that can't be encoded on this platform."""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        print(msg.encode("ascii", errors="replace").decode("ascii"))
 
 POLYMARKET_URL = "https://gamma-api.polymarket.com/markets"
 KALSHI_BASE    = "https://api.elections.kalshi.com/trade-api/v2/markets"
@@ -20,14 +28,12 @@ KALSHI_SERIES = [
     "KXGDP",          # US GDP growth
     "KXINFLATION",    # CPI / inflation
     "KXUNEMPLOYMENT", # Unemployment rate
-    "KXBTC",          # Bitcoin price
-    "KXETH",          # Ethereum price
-    "KXSP500",        # S&P 500 level
-    "KXNASDAQ",       # Nasdaq level
     "KXTRUMP",        # Trump approval / actions
     "KXECON",         # Economy topics
     "KXWARMING",      # Climate / temperature
     "KXAI",           # AI topics
+    # Excluded: KXBTC, KXETH, KXSP500, KXNASDAQ — short-term daily price ranges
+    # always resolve near 0% or 100% (too specific), filtered out by the price filter
 ]
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
@@ -67,8 +73,8 @@ def _infer_category(text: str) -> str:
 
 
 def _clean_title(title: str) -> str:
-    """Remove markdown bold markers from Kalshi titles."""
-    return title.replace("**", "").strip()
+    """Remove markdown bold markers and sanitize Unicode for cross-platform safety."""
+    return title.replace("**", "").encode("ascii", errors="replace").decode("ascii").strip()
 
 
 async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[dict]:
@@ -84,7 +90,7 @@ async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[d
             return []
         markets = resp.json().get("markets", [])
     except Exception as e:
-        print(f"[markets_client] Kalshi series {series} error: {e}")
+        _print(f"[markets_client] Kalshi series {series} error: {e}")
         return []
 
     results = []
@@ -111,8 +117,8 @@ async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[d
             else:
                 continue
 
-            # Skip near-certain outcomes (< 5% or > 95%) — these are basically resolved
-            if yes_pct < 5 or yes_pct > 95:
+            # Skip fully resolved outcomes only
+            if yes_pct < 2 or yes_pct > 98:
                 continue
 
             no_pct = 100.0 - yes_pct
@@ -157,7 +163,7 @@ async def _fetch_kalshi(client: httpx.AsyncClient) -> list[dict]:
             seen.add(key)
             unique.append(m)
 
-    print(f"[markets_client] Kalshi: {len(unique)} unique markets from {len(KALSHI_SERIES)} series")
+    _print(f"[markets_client] Kalshi: {len(unique)} unique markets from {len(KALSHI_SERIES)} series")
     return unique
 
 
@@ -170,18 +176,19 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
             timeout=TIMEOUT,
         )
         if resp.status_code != 200:
-            print(f"[markets_client] Polymarket HTTP {resp.status_code}")
+            _print(f"[markets_client] Polymarket HTTP {resp.status_code}")
             return []
         data = resp.json()
         markets = data if isinstance(data, list) else data.get("markets", [])
     except Exception as e:
-        print(f"[markets_client] Polymarket fetch failed: {e}")
+        _print(f"[markets_client] Polymarket fetch failed: {e}")
         return []
 
     results = []
     for m in markets:
         try:
             question = (m.get("question") or m.get("title") or "").strip()
+            question = question.encode("ascii", errors="replace").decode("ascii").strip()
             if not question:
                 continue
 
@@ -194,11 +201,11 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
             yes_pct = float(prices[0]) * 100
             no_pct  = float(prices[1]) * 100
 
-            # Skip near-certain outcomes and negligible markets
-            if yes_pct < 5 or yes_pct > 95:
+            # Skip fully resolved outcomes only
+            if yes_pct < 2 or yes_pct > 98:
                 continue
 
-            volume = float(m.get("volume24hr") or m.get("volume") or 0)
+            volume = float(m.get("volume24hr") or m.get("volume") or m.get("liquidity") or 0)
             if volume < 100:
                 continue
 
@@ -213,7 +220,7 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
 
-    print(f"[markets_client] Polymarket: {len(results)} markets")
+    _print(f"[markets_client] Polymarket: {len(results)} markets")
     return results
 
 
@@ -247,5 +254,5 @@ async def fetch_top_markets(top_n: int = 10) -> list[dict]:
             merged.append(top_poly[i])
 
     top = merged[:top_n]
-    print(f"[markets_client] Total: {len(kalshi_results)} Kalshi + {len(poly_results)} Polymarket → showing {len(top_kalshi)} + {len(top_poly)}")
+    _print(f"[markets_client] Total: {len(kalshi_results)} Kalshi + {len(poly_results)} Polymarket -> showing {len(top_kalshi)} + {len(top_poly)}")
     return top

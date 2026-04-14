@@ -11,9 +11,11 @@ CATEGORY_SUBREDDITS: dict[str, list[str]] = {
     "Politics": ["politics", "worldnews", "PoliticalDiscussion", "geopolitics", "NeutralPolitics"],
     "Prediction Markets": ["predictionmarkets", "Kalshi", "polymarket", "futuresandoptions"],
     "Daily Hot Topics": ["AskReddit", "todayilearned", "news", "worldnews", "interestingasfuck"],
-    "Sector Sentiment": ["realestate", "energy", "healthcare", "dividends", "ETFs"],
+    "Sector Sentiment": ["energy", "healthcare", "dividends", "ETFs"],
     "Technology & AI": ["artificial", "MachineLearning", "ChatGPT", "singularity", "LocalLLaMA", "OpenAI", "Anthropic"],
     "Blockchain & Crypto": ["CryptoCurrency", "ethereum", "Bitcoin", "solana", "defi", "web3"],
+    "Real Estate": ["realestate", "FirstTimeHomeBuyer", "REBubble",
+                    "Renters", "Landlord", "airbnb", "RealEstateInvesting"],
 }
 
 HEADERS = {

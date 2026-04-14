@@ -5,14 +5,14 @@ public confidence based on trending topics and discussion patterns.
 """
 import os
 import json
-import anthropic
+from google import genai as google_genai
 
 _client = None
 
-def _get_client() -> anthropic.Anthropic:
+def _get_client() -> google_genai.Client:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        _client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     return _client
 
 
@@ -72,18 +72,13 @@ Each object must have exactly these fields:
 Respond with ONLY valid JSON array, no other text."""
 
     try:
-        client = _get_client()
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = message.content[0].text.strip()
+        resp = _get_client().models.generate_content(model="models/gemini-2.5-flash", contents=prompt)
+        raw  = resp.text.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
         return json.loads(raw)
     except Exception as e:
-        print(f"[tech_momentum] Claude error: {e}")
+        print(f"[tech_momentum] Gemini error: {e}")
         return []

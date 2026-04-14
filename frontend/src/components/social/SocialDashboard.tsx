@@ -39,7 +39,7 @@ interface TechMomentumItem {
 const ANALYSIS_STAGES = [
   { delay: 0,     msg: 'Connecting to Reddit & Hacker News…' },
   { delay: 6000,  msg: 'Fetching trending posts…' },
-  { delay: 14000, msg: 'Scoring sentiment with Claude…' },
+  { delay: 14000, msg: 'Scoring sentiment with Gemini…' },
   { delay: 28000, msg: 'Generating investment signals…' },
   { delay: 45000, msg: 'Calculating tech momentum…' },
   { delay: 70000, msg: 'Still working, please be patient…' },
@@ -275,13 +275,13 @@ export default function SocialDashboard() {
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-slate-200 font-semibold">
                   Social Mood
-                  <InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Claude Haiku from Reddit and Hacker News posts." />
+                  <InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Gemini Flash from Reddit, Hacker News, YouTube, FRED, and Redfin." />
                 </h3>
                 <CollapseButton open={moodOpen} onClick={() => setMoodOpen(o => !o)} />
               </div>
               {moodOpen && (
                 <>
-                  <p className="text-slate-500 text-xs mb-4">Crowd sentiment per category — scored by Claude AI from live social posts</p>
+                  <p className="text-slate-500 text-xs mb-4">Crowd sentiment per category — scored by Gemini AI from live social posts</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {Object.entries(moodScores).map(([cat, mood]) => (
                       <MoodGauge key={cat} category={cat} data={mood} />
@@ -298,7 +298,7 @@ export default function SocialDashboard() {
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-slate-200 font-semibold">
                   Investment Signals
-                  <InfoTooltip text="Claude Sonnet maps social mood → sector and ticker implications. Informational only — not financial advice." />
+                  <InfoTooltip text="Gemini Pro synthesizes social mood, prediction market probabilities, and housing data into sector and ticker signals. Informational only — not financial advice." />
                 </h3>
                 <CollapseButton open={signalsOpen} onClick={() => setSignalsOpen(o => !o)} />
               </div>
