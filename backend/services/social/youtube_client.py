@@ -7,15 +7,13 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 
 CATEGORY_KEYWORDS: dict[str, str] = {
-    "Politics": "politics news today",
-    "Economy & Finance": "economy finance stock market today",
-    "Technology & AI": "artificial intelligence technology 2024",
-    "Entertainment": "entertainment celebrity news",
-    "Health & Wellness": "health wellness science",
-    "Environment & Climate": "climate change environment",
-    "Sports": "sports highlights today",
-    "Science": "science discovery news",
-    "Memes & Viral": "viral trends today",
+    "Economy": "economy finance stock market inflation interest rates",
+    "Politics": "politics policy government elections news today",
+    "Technology & AI": "artificial intelligence AI technology developer news",
+    "Blockchain & Crypto": "bitcoin ethereum crypto blockchain DeFi",
+    "Sector Sentiment": "stocks ETF energy healthcare sector investing",
+    "Real Estate": "housing market mortgage real estate home prices",
+    "Daily Hot Topics": "trending news today viral discussion",
 }
 
 

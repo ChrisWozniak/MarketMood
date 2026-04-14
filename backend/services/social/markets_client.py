@@ -36,30 +36,52 @@ KALSHI_SERIES = [
     # always resolve near 0% or 100% (too specific), filtered out by the price filter
 ]
 
+# Keywords that indicate a market is sports/entertainment and should be excluded
+EXCLUDE_KEYWORDS: list[str] = [
+    "win", "beat", "champion", "championship", "league", "cup", "tournament",
+    "match", "game", "nfl", "nba", "nhl", "mlb", "fifa", "soccer", "football",
+    "basketball", "baseball", "tennis", "golf", "ufc", "boxing", "olympic",
+    "super bowl", "world series", "playoffs", "roster", "transfer",
+    "psg", "paris saint-germain", "real madrid", "barcelona", "manchester",
+    "liverpool", "chelsea", "arsenal", "lakers", "celtics", "warriors",
+    "oscars", "emmy", "grammy", "academy award", "box office", "album",
+    "kardashian", "taylor swift", "beyonce", "drake",
+]
+
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
-    "Economy & Finance": [
-        "fed", "federal reserve", "rate", "rates", "inflation", "gdp", "recession",
-        "unemployment", "jobs", "market", "s&p", "dow", "nasdaq", "stock", "oil",
-        "gold", "dollar", "debt", "deficit", "tariff", "trade", "cpi", "pce",
+    "Economy": [
+        "fed", "federal reserve", "interest rate", "inflation", "gdp", "recession",
+        "unemployment", "jobs report", "s&p 500", "dow jones", "nasdaq", "stock market",
+        "oil price", "gold price", "dollar", "debt ceiling", "deficit", "tariff",
+        "trade war", "cpi", "pce", "treasury", "yield curve", "mortgage rate",
     ],
     "Politics": [
         "election", "president", "trump", "biden", "harris", "congress", "senate",
-        "house", "republican", "democrat", "vote", "ballot", "impeach", "white house",
-        "governor", "primary", "poll", "approval",
+        "house of representatives", "republican", "democrat", "vote", "ballot",
+        "impeach", "white house", "governor", "primary", "approval rating",
+        "supreme court", "legislation", "executive order", "cabinet",
     ],
     "Technology & AI": [
-        "ai", "artificial intelligence", "openai", "gpt", "llm", "tech", "apple",
-        "google", "microsoft", "meta", "amazon", "nvidia", "chip", "crypto", "bitcoin",
-        "ethereum", "blockchain", "spacex", "elon",
+        "artificial intelligence", "openai", "chatgpt", "gpt", "llm", "large language",
+        "apple", "google", "microsoft", "meta", "amazon", "nvidia", "semiconductor",
+        "spacex", "starship", "self-driving", "autonomous", "robotics",
+    ],
+    "Blockchain & Crypto": [
+        "bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain", "defi",
+        "nft", "solana", "binance", "coinbase", "web3", "stablecoin", "altcoin",
+        "btc", "eth", "sec crypto", "crypto regulation",
     ],
     "World Affairs": [
-        "war", "ukraine", "russia", "china", "nato", "israel", "iran", "korea",
-        "taiwan", "conflict", "sanction", "nuclear", "ceasefire", "summit", "india",
-        "pakistan", "pope", "eu", "europe",
+        "war", "ukraine", "russia", "china", "nato", "israel", "iran", "north korea",
+        "taiwan", "conflict", "sanction", "nuclear", "ceasefire", "peace deal",
+        "india", "pakistan", "pope", "european union", "g7", "g20",
+        "strait", "hormuz", "middle east", "persian gulf", "red sea", "suez",
+        "trade route", "shipping lane", "geopolit", "diplomacy", "treaty",
+        "missile", "airstrike", "troops", "military", "pentagon", "un security",
     ],
-    "Health & Science": [
-        "fda", "drug", "vaccine", "health", "covid", "cancer", "disease", "climate",
-        "hurricane", "earthquake", "nasa", "space", "temperature", "celsius",
+    "Real Estate": [
+        "housing market", "home price", "mortgage", "real estate", "fed rate housing",
+        "rent", "redfin", "zillow", "housing starts", "inventory",
     ],
 }
 
@@ -70,6 +92,12 @@ def _infer_category(text: str) -> str:
         if any(kw in lower for kw in keywords):
             return category
     return "General"
+
+
+def _is_relevant(text: str) -> bool:
+    """Return False for sports, entertainment, and other non-financial markets."""
+    lower = text.lower()
+    return not any(kw in lower for kw in EXCLUDE_KEYWORDS)
 
 
 def _clean_title(title: str) -> str:
@@ -132,6 +160,9 @@ async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[d
 
             # Skip markets with negligible activity (< 50 contracts / dollars)
             if volume < 50:
+                continue
+
+            if not _is_relevant(title):
                 continue
 
             results.append({
@@ -207,6 +238,9 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
 
             volume = float(m.get("volume24hr") or m.get("volume") or m.get("liquidity") or 0)
             if volume < 100:
+                continue
+
+            if not _is_relevant(question):
                 continue
 
             results.append({

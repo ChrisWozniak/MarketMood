@@ -22,15 +22,14 @@ const TREND_COLOR: Record<string, string> = {
   stable: 'text-slate-400', cyclical: 'text-yellow-400',
 }
 const CATEGORY_COLOR: Record<string, string> = {
+  'Economy':              '#22c55e',
   'Politics':             '#f59e0b',
-  'Economy & Finance':    '#22c55e',
   'Technology & AI':      '#6366f1',
-  'Entertainment':        '#ec4899',
-  'Health & Wellness':    '#0ea5e9',
-  'Science':              '#8b5cf6',
-  'Environment & Climate':'#10b981',
-  'Sports':               '#f97316',
-  'Memes & Viral':        '#a78bfa',
+  'Blockchain & Crypto':  '#f97316',
+  'Sector Sentiment':     '#0ea5e9',
+  'Real Estate':          '#10b981',
+  'Prediction Markets':   '#a78bfa',
+  'Daily Hot Topics':     '#ec4899',
 }
 const PLATFORM_ICON: Record<string, string> = {
   'Reddit':      '🟠',
