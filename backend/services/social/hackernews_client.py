@@ -36,9 +36,10 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "merger", "energy", "oil", "healthcare", "pharma", "real estate",
         "semiconductor", "ev", "tesla", "apple", "google", "microsoft",
     ],
-    "Prediction Markets": [
-        "prediction market", "kalshi", "polymarket", "odds", "probability",
-        "forecast", "betting", "election odds", "fed rate odds",
+    "Health & Science": [
+        "health", "longevity", "cancer", "vaccine", "clinical trial", "fda",
+        "drug", "medicine", "biology", "genetics", "aging", "nutrition",
+        "mental health", "obesity", "alzheimer", "study finds", "researchers",
     ],
     "Real Estate": [
         "housing", "mortgage", "rent", "rental", "home price", "home sales",

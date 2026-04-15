@@ -36,16 +36,24 @@ KALSHI_SERIES = [
     # always resolve near 0% or 100% (too specific), filtered out by the price filter
 ]
 
-# Keywords that indicate a market is sports/entertainment and should be excluded
+# Keywords that indicate a market is sports/entertainment and should be excluded.
+# " vs." catches nearly all sports matchup markets (Heat vs. Hornets, etc.)
 EXCLUDE_KEYWORDS: list[str] = [
-    "win", "beat", "champion", "championship", "league", "cup", "tournament",
-    "match", "game", "nfl", "nba", "nhl", "mlb", "fifa", "soccer", "football",
-    "basketball", "baseball", "tennis", "golf", "ufc", "boxing", "olympic",
-    "super bowl", "world series", "playoffs", "roster", "transfer",
-    "psg", "paris saint-germain", "real madrid", "barcelona", "manchester",
-    "liverpool", "chelsea", "arsenal", "lakers", "celtics", "warriors",
-    "oscars", "emmy", "grammy", "academy award", "box office", "album",
-    "kardashian", "taylor swift", "beyonce", "drake",
+    # Matchup pattern — catches virtually all head-to-head sports markets
+    " vs.", " vs ",
+    # Sports leagues and events
+    "nfl", "nba", "nhl", "mlb", "fifa", "mls", "premier league",
+    "soccer", "football", "basketball", "baseball", "tennis", "golf",
+    "ufc", "boxing", "olympic", "super bowl", "world series",
+    "playoffs", "roster", "transfer", "draft pick",
+    # Esports
+    "counter-strike", "cs2", "csgo", "dota", "league of legends",
+    "valorant", "overwatch", "starcraft", "fortnite", "esport",
+    "iem", "esl", "blast", "major tournament", "group stage",
+    # Entertainment
+    "oscars", "emmy", "grammy", "academy award", "box office",
+    "album", "kardashian", "taylor swift", "beyonce", "drake",
+    "reality show", "streaming series", "movie gross",
 ]
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {

@@ -1,5 +1,5 @@
 """
-Reddit social signal client for MoodMarket.
+Reddit social signal client for Market Mood.
 Uses the public JSON API (no auth required for public subreddits).
 Endpoint: https://www.reddit.com/r/{sub}/hot.json?limit=25
 """
@@ -9,8 +9,8 @@ import httpx
 CATEGORY_SUBREDDITS: dict[str, list[str]] = {
     "Economy": ["economics", "investing", "personalfinance", "stocks", "wallstreetbets", "economy", "inflation"],
     "Politics": ["politics", "worldnews", "PoliticalDiscussion", "geopolitics", "NeutralPolitics"],
-    "Prediction Markets": ["predictionmarkets", "Kalshi", "polymarket", "futuresandoptions"],
-    "Daily Hot Topics": ["AskReddit", "todayilearned", "news", "worldnews", "interestingasfuck"],
+    "Health & Science": ["health", "science", "longevity", "Futurology", "medicine", "nutrition", "biology"],
+    "Daily Hot Topics": ["news", "technology", "science", "business", "environment", "entertainment", "sports"],
     "Sector Sentiment": ["energy", "healthcare", "dividends", "ETFs"],
     "Technology & AI": ["artificial", "MachineLearning", "ChatGPT", "singularity", "LocalLLaMA", "OpenAI", "Anthropic"],
     "Blockchain & Crypto": ["CryptoCurrency", "ethereum", "Bitcoin", "solana", "defi", "web3"],

@@ -1,5 +1,5 @@
 """
-Mood scorer for MoodMarket.
+Mood scorer for Market Mood.
 Uses Claude (claude-haiku-4-5 for speed/cost) to score sentiment per category
 and extract sub-topics from post titles.
 """
@@ -12,19 +12,72 @@ from google import genai as google_genai
 
 _client = None
 
-MOOD_CATEGORY_LIMIT = 7  # Score all MoodMarket categories
+MOOD_CATEGORY_LIMIT = 7  # Score all Market Mood categories
 
 STOP_WORDS = {
+    # Articles, conjunctions, prepositions
     'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-    'should', 'may', 'might', 'can', 'as', 'it', 'its', 'this', 'that',
-    'these', 'those', 'he', 'she', 'they', 'we', 'you', 'i', 'his', 'her',
-    'their', 'our', 'your', 'my', 'not', 'no', 'new', 'how', 'why', 'what',
-    'when', 'where', 'who', 'which', 'after', 'before', 'about', 'up', 'down',
-    'out', 'into', 'over', 'than', 'more', 'most', 'also', 'just', 'now',
-    'all', 'back', 'first', 'last', 'next', 'other', 'says', 'said', 'amid',
-    'us', 'uk', 'report', 'reports', 'get', 'gets', 'got', 'make', 'makes',
+    'of', 'with', 'by', 'from', 'as', 'into', 'over', 'than', 'out', 'up',
+    'down', 'about', 'after', 'before', 'between', 'through', 'during',
+    'without', 'against', 'within', 'per', 'across', 'behind', 'beyond',
+    'plus', 'except', 'around', 'along', 'among', 'since', 'while',
+    'although', 'because', 'unless', 'until', 'whether', 'though',
+    # Pronouns
+    'it', 'its', 'this', 'that', 'these', 'those', 'he', 'she', 'they',
+    'we', 'you', 'i', 'his', 'her', 'their', 'our', 'your', 'my',
+    'both', 'either', 'neither', 'another', 'each', 'own', 'same',
+    # Auxiliary verbs
+    'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did',
+    'will', 'would', 'could', 'should', 'may', 'might', 'can',
+    # Common verbs (too generic to be topics)
+    'get', 'gets', 'got', 'getting', 'make', 'makes', 'made', 'making',
+    'say', 'says', 'said', 'saying', 'know', 'think', 'want', 'need',
+    'use', 'used', 'using', 'take', 'takes', 'took', 'taking',
+    'go', 'going', 'goes', 'went', 'come', 'comes', 'came', 'coming',
+    'look', 'looks', 'looking', 'seem', 'seems', 'seemed', 'show', 'shows',
+    'tell', 'told', 'find', 'found', 'give', 'gave', 'given',
+    'become', 'became', 'becomes', 'keep', 'kept', 'try', 'tried',
+    'call', 'let', 'run', 'move', 'turn', 'start', 'end', 'open',
+    'help', 'talk', 'read', 'write', 'lead', 'live', 'stand',
+    'bring', 'happen', 'include', 'continue', 'feel', 'believe',
+    'allow', 'add', 'change', 'expect', 'remain', 'appear',
+    'send', 'build', 'stay', 'provide', 'raise', 'offer', 'consider',
+    'increase', 'face', 'lose', 'pass', 'stop', 'ask', 'put', 'set',
+    'mean', 'means', 'meant', 'leave', 'left', 'hold', 'pay',
+    # Negations and conjunctions
+    'not', 'no', 'nor', 'never', 'always', 'still', 'already', 'yet',
+    'however', 'therefore', 'instead', 'rather', 'indeed', 'actually',
+    # Quantifiers / generic descriptors
+    'all', 'more', 'most', 'many', 'much', 'some', 'any', 'few', 'less',
+    'least', 'every', 'each', 'only', 'also', 'even', 'very', 'really',
+    'quite', 'too', 'such', 'different', 'other', 'new', 'old',
+    'big', 'large', 'small', 'high', 'low', 'long', 'short',
+    'good', 'bad', 'right', 'wrong', 'better', 'worse', 'best', 'worst',
+    'full', 'half', 'both', 'next', 'last', 'first',
+    # Generic nouns (not specific enough to be topics)
+    'thing', 'things', 'something', 'anything', 'everything', 'nothing',
+    'someone', 'anyone', 'everyone', 'nobody', 'people', 'person',
+    'time', 'times', 'year', 'years', 'day', 'days', 'week', 'weeks',
+    'month', 'months', 'today', 'tomorrow', 'yesterday',
+    'way', 'ways', 'case', 'part', 'parts', 'place', 'places',
+    'point', 'points', 'kind', 'type', 'side', 'world', 'line',
+    'number', 'lot', 'lots', 'bit', 'back', 'here', 'there', 'where',
+    # Common adverbs
+    'how', 'why', 'what', 'when', 'who', 'which',
+    'just', 'now', 'then', 'soon', 'often', 'ever', 'else',
+    'well', 'away', 'maybe', 'perhaps', 'probably', 'likely',
+    # Question word contractions / common short words
+    'whats', 'thats', 'dont', 'cant', 'wont', 'isnt', 'arent',
+    'wasnt', 'werent', 'hasnt', 'havent', 'wouldnt', 'couldnt',
+    'shouldnt', 'didnt', 'doesnt', 'its', 'theres', 'theyre',
+    # Common source/meta words
+    'said', 'says', 'amid', 'via', 'per',
+    'report', 'reports', 'reported', 'update', 'updates', 'updated',
+    'news', 'post', 'posts', 'comment', 'comments', 'question',
+    'week', 'month', 'year', 'daily', 'weekly', 'monthly', 'annual',
+    # Common country/region abbreviations too short to be useful
+    'us', 'uk',
 }
 
 
@@ -60,8 +113,14 @@ def _extract_subtopics_fallback(posts: list[dict], n: int = 5) -> list[str]:
         return []
 
     def tokenize(text: str) -> list[str]:
-        return [t for t in re.findall(r"[A-Za-z][a-zA-Z']{2,}", text)
-                if t.lower() not in STOP_WORDS and len(t) > 3]
+        raw_tokens = re.findall(r"[A-Za-z][a-zA-Z']{2,}", text)
+        result = []
+        for t in raw_tokens:
+            # Strip apostrophe suffixes ('s, 't, 're, 've, 'll, etc.) before checking
+            clean = re.sub(r"'[a-z]{1,3}$", '', t.lower())
+            if clean not in STOP_WORDS and len(clean) > 3:
+                result.append(t)
+        return result
 
     bigrams: list[str] = []
     all_words: list[str] = []
@@ -208,40 +267,175 @@ async def score_all_moods(
     return results
 
 
+MAX_SUBTOPICS = 3  # Maximum subtopics shown per category
+
+
+def _clean_titles(posts: list[dict], limit: int = 20) -> list[str]:
+    """Extract and clean post titles, stripping Reddit/HN meta-prefixes."""
+    STRIP_PREFIXES = ("TIL ", "TIL: ", "TIL that ", "Ask HN: ", "Show HN: ", "Tell HN: ")
+    titles = []
+    for p in posts[:limit]:
+        t = p.get("title", "").strip()
+        if not t:
+            continue
+        for prefix in STRIP_PREFIXES:
+            if t.startswith(prefix):
+                t = t[len(prefix):]
+        if t:
+            titles.append(t)
+    return titles
+
+
+def _parse_gemini_list(raw: str) -> list[str]:
+    """Parse a JSON array from a Gemini response, stripping markdown fences."""
+    cleaned = raw.strip()
+    for fence in ["```json", "```"]:
+        if cleaned.startswith(fence):
+            cleaned = cleaned[len(fence):]
+        if cleaned.endswith(fence):
+            cleaned = cleaned[:-len(fence)]
+    cleaned = cleaned.strip()
+    result = json.loads(cleaned)
+    if isinstance(result, list):
+        return [str(s).strip() for s in result if s and str(s).strip()]
+    return []
+
+
+def _top_posts_by_engagement(posts: list[dict], n: int) -> list[dict]:
+    return sorted(
+        [p for p in posts if p.get("title")],
+        key=lambda p: p.get("score", 0) + p.get("num_comments", 0),
+        reverse=True,
+    )[:n]
+
+
+def _hot_topics_fallback(posts: list[dict]) -> list[str]:
+    """Fallback: take top posts by engagement, truncate titles to 5 words."""
+    results = []
+    seen: set[str] = set()
+    for p in _top_posts_by_engagement(posts, MAX_SUBTOPICS * 3):
+        title = p["title"].strip()
+        for prefix in ("TIL ", "TIL: ", "TIL that ", "Ask HN: ", "Show HN: ", "Tell HN: "):
+            if title.startswith(prefix):
+                title = title[len(prefix):]
+        words = title.split()[:6]
+        while words and words[-1].lower() in {'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'}:
+            words.pop()
+        short = " ".join(words[:5])
+        if short and short.lower() not in seen:
+            seen.add(short.lower())
+            results.append(short)
+        if len(results) >= MAX_SUBTOPICS:
+            break
+    return results
+
+
+# Shared prompt rules injected into every subtopic extraction call
+_TOPIC_RULES = (
+    "Rules for each topic:\n"
+    "- 3-5 words maximum\n"
+    "- Neutral, factual, journalistic language — no inflammatory, partisan, or sensationalist phrasing\n"
+    "- Name specific events, policies, companies, people, or issues\n"
+    "- Avoid generic filler words (time, people, things, world, situation)\n"
+    f"Return ONLY a JSON array of exactly {MAX_SUBTOPICS} short strings.\n"
+)
+
+
 async def extract_sub_topics(category: str, posts: list[dict]) -> list[str]:
     if not posts:
         return []
 
-    titles = [p.get("title", "") for p in posts[:15] if p.get("title")]
+    if category == "Daily Hot Topics":
+        return await _extract_daily_hot_topics(posts)
+
+    if category == "Sector Sentiment":
+        return await _extract_sector_topics(posts)
+
+    titles = _clean_titles(posts, limit=20)
     if not titles:
         return []
 
     prompt = (
-        f"From these {category} social media post titles, list the 3-5 most discussed "
-        f"specific sub-topics. Be specific, not generic.\n"
-        f"Titles:\n" + "\n".join(f"- {t}" for t in titles) +
-        "\n\nReturn ONLY a JSON array of short strings. Example: [\"topic1\", \"topic2\"]"
+        f"From these {category} social media post titles, identify the {MAX_SUBTOPICS} "
+        f"most newsworthy specific topics being discussed right now.\n"
+        f"Good examples: 'Fed rate decision', 'Gaza ceasefire talks', 'GPT-5 release', "
+        f"'mortgage rate rise', 'tariff impact'.\n"
+        f"{_TOPIC_RULES}"
+        f"Titles:\n" + "\n".join(f"- {t}" for t in titles[:15])
     )
 
-    raw = await _gemini_call(prompt, max_tokens=120)
+    raw = await _gemini_call(prompt, max_tokens=150)
     if raw:
-        cleaned = raw.strip()
-        for fence in ["```json", "```"]:
-            if cleaned.startswith(fence):
-                cleaned = cleaned[len(fence):]
-            if cleaned.endswith(fence):
-                cleaned = cleaned[:-len(fence)]
-        cleaned = cleaned.strip()
         try:
-            result = json.loads(cleaned)
-            if isinstance(result, list) and result:
-                subtopics = [str(s) for s in result if s]
-                if subtopics:
-                    return subtopics
+            result = _parse_gemini_list(raw)
+            if result:
+                return result[:MAX_SUBTOPICS]
         except Exception:
             pass
 
-    return _extract_subtopics_fallback(posts, n=5)
+    return _extract_subtopics_fallback(posts, n=MAX_SUBTOPICS)
+
+
+async def _extract_daily_hot_topics(posts: list[dict]) -> list[str]:
+    """
+    For Daily Hot Topics: rank by engagement, compress each top story into
+    a short neutral headline. Falls back to title truncation.
+    """
+    top = _top_posts_by_engagement(posts, MAX_SUBTOPICS * 2)
+    titles = _clean_titles(top, limit=MAX_SUBTOPICS)
+    if not titles:
+        return []
+
+    prompt = (
+        f"Compress each of these trending news headlines into a 3-5 word neutral summary.\n"
+        f"Good examples: 'Fluoride water safety review', 'Swalwell House resignation', "
+        f"'Antarctic ice shelf collapse', 'Netflix password crackdown'.\n"
+        f"{_TOPIC_RULES}"
+        f"Headlines:\n" + "\n".join(f"- {t}" for t in titles)
+    )
+
+    raw = await _gemini_call(prompt, max_tokens=150)
+    if raw:
+        try:
+            result = _parse_gemini_list(raw)
+            if result:
+                return result[:MAX_SUBTOPICS]
+        except Exception:
+            pass
+
+    return _hot_topics_fallback(posts)
+
+
+async def _extract_sector_topics(posts: list[dict]) -> list[str]:
+    """
+    For Sector Sentiment: each topic must be prefixed with its sector name
+    so users immediately know which industry is being discussed.
+    e.g. 'Energy: natural gas prices', 'Healthcare: drug pricing bill'
+    """
+    titles = _clean_titles(posts, limit=20)
+    if not titles:
+        return []
+
+    prompt = (
+        f"From these Sector Sentiment posts, identify the {MAX_SUBTOPICS} most discussed topics.\n"
+        f"For each topic, identify its sector (Energy, Healthcare, Technology, Finance, "
+        f"Consumer, Industrial, Materials) and format as 'Sector: topic'.\n"
+        f"Good examples: 'Energy: natural gas prices', 'Healthcare: drug pricing bill', "
+        f"'Tech: data center demand', 'Finance: bank earnings'.\n"
+        f"{_TOPIC_RULES}"
+        f"Titles:\n" + "\n".join(f"- {t}" for t in titles[:15])
+    )
+
+    raw = await _gemini_call(prompt, max_tokens=150)
+    if raw:
+        try:
+            result = _parse_gemini_list(raw)
+            if result:
+                return result[:MAX_SUBTOPICS]
+        except Exception:
+            pass
+
+    return _extract_subtopics_fallback(posts, n=MAX_SUBTOPICS)
 
 
 async def extract_all_sub_topics(

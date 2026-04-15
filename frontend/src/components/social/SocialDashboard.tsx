@@ -34,6 +34,7 @@ interface TechMomentumItem {
   proxy_tickers: string[]
 }
 
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const ANALYSIS_STAGES = [
@@ -68,8 +69,8 @@ const DIRECTION_STYLES = {
 function CollapseButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   return (
     <button
-      onClick={onClick}
-      className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700"
+      onClick={e => { e.stopPropagation(); onClick() }}
+      className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700 shrink-0"
       title={open ? 'Collapse' : 'Expand'}
     >
       <span style={{ display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
@@ -105,6 +106,7 @@ function SignalCard({ signal }: { signal: InvestmentSignal }) {
     </div>
   )
 }
+
 
 function MomentumRow({ item }: { item: TechMomentumItem }) {
   const dir = DIRECTION_STYLES[item.direction]
@@ -153,11 +155,11 @@ export default function SocialDashboard() {
   const [analyzing, setAnalyzing] = useState(false)
   const [stageMsg, setStageMsg]   = useState('')
 
-  const [moodOpen,     setMoodOpen]     = useState(true)
-  const [signalsOpen,  setSignalsOpen]  = useState(true)
-  const [momentumOpen, setMomentumOpen] = useState(true)
-  const [topicsOpen,   setTopicsOpen]   = useState(true)
-  const [marketsOpen,  setMarketsOpen]  = useState(true)
+  const [moodOpen,     setMoodOpen]     = useState(true)   // open on fresh start
+  const [signalsOpen,  setSignalsOpen]  = useState(false)
+  const [momentumOpen, setMomentumOpen] = useState(false)
+  const [topicsOpen,   setTopicsOpen]   = useState(false)
+  const [marketsOpen,  setMarketsOpen]  = useState(false)
 
   const { panelCollapse } = useStore()
   useEffect(() => {
@@ -219,13 +221,14 @@ export default function SocialDashboard() {
   const investmentSignals = signals?.investment_signals || []
   const techMomentum      = signals?.tech_momentum || []
 
+
   return (
     <div className="space-y-6">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-slate-200 font-semibold text-lg">MoodMarket</h2>
+          <h2 className="text-slate-200 font-semibold text-lg">Market Mood</h2>
           {data && !analyzing && (
             <p className="text-slate-500 text-xs mt-0.5">
               Last updated: {new Date((data.captured_at as string) + 'Z').toLocaleString()}
@@ -272,10 +275,10 @@ export default function SocialDashboard() {
           {/* ── Social Mood Barometer ── */}
           {Object.keys(moodScores).length > 0 && (
             <Card accent="#6366f1">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-slate-200 font-semibold">
+              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setMoodOpen(o => !o)}>
+                <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Social Mood
-                  <InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Gemini Flash from Reddit, Hacker News, YouTube, FRED, and Redfin." />
+                  <span onClick={e => e.stopPropagation()}><InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Gemini Flash from Reddit, Hacker News, YouTube, FRED, and Redfin." /></span>
                 </h3>
                 <CollapseButton open={moodOpen} onClick={() => setMoodOpen(o => !o)} />
               </div>
@@ -295,10 +298,10 @@ export default function SocialDashboard() {
           {/* ── Investment Signals ── */}
           {investmentSignals.length > 0 && (
             <Card accent="#22c55e">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-slate-200 font-semibold">
+              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setSignalsOpen(o => !o)}>
+                <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Investment Signals
-                  <InfoTooltip text="Gemini Pro synthesizes social mood, prediction market probabilities, and housing data into sector and ticker signals. Informational only — not financial advice." />
+                  <span onClick={e => e.stopPropagation()}><InfoTooltip text="Gemini Pro synthesizes social mood, prediction market probabilities, and housing data into sector and ticker signals. Informational only — not financial advice." /></span>
                 </h3>
                 <CollapseButton open={signalsOpen} onClick={() => setSignalsOpen(o => !o)} />
               </div>
@@ -318,10 +321,10 @@ export default function SocialDashboard() {
           {/* ── Tech Momentum ── */}
           {techMomentum.length > 0 && (
             <Card accent="#f59e0b">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-slate-200 font-semibold">
+              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setMomentumOpen(o => !o)}>
+                <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Tech Momentum
-                  <InfoTooltip text="Which technologies and companies are gaining or losing developer mindshare, based on social discussion patterns." />
+                  <span onClick={e => e.stopPropagation()}><InfoTooltip text="Which technologies and companies are gaining or losing developer mindshare, based on social discussion patterns." /></span>
                 </h3>
                 <CollapseButton open={momentumOpen} onClick={() => setMomentumOpen(o => !o)} />
               </div>
@@ -340,10 +343,10 @@ export default function SocialDashboard() {
 
           {/* ── Trending Topics ── */}
           <Card accent="#818cf8">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-slate-200 font-semibold">
+            <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setTopicsOpen(o => !o)}>
+              <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                 Trending Topics
-                <InfoTooltip text="Most discussed subjects ranked by engagement volume across Reddit and Hacker News." />
+                <span onClick={e => e.stopPropagation()}><InfoTooltip text="Most discussed subjects ranked by engagement volume across Reddit and Hacker News." /></span>
               </h3>
               <CollapseButton open={topicsOpen} onClick={() => setTopicsOpen(o => !o)} />
             </div>

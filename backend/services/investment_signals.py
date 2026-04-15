@@ -1,5 +1,5 @@
 """
-Investment signal generator for MoodMarket.
+Investment signal generator for Market Mood.
 Uses Claude to map category mood scores -> sector/ticker implications.
 """
 import os
@@ -114,6 +114,10 @@ Rules:
 - If a prediction market directly addresses a category outcome, let it anchor the signal direction
 - If sentiment and prediction markets disagree, flag this tension in the insight
 - Include a Real Estate signal using the housing indicators if present
+- Always include ONE "Crowd Forecast" signal that synthesizes ALL prediction market probabilities \
+into a single directional view. Summarize what the collective crowd wisdom signals in 2-3 sentences \
+(e.g. geopolitical risk, macro uncertainty, rate path). Use tickers like VIX, TLT, GLD, SPY, IEF \
+as appropriate. Set confidence based on total traded volume across all markets.
 - This is informational analysis only, not financial advice
 Respond with ONLY valid JSON array, no other text."""
 

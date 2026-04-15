@@ -1,5 +1,5 @@
 """
-FRED (Federal Reserve Economic Data) client for MoodMarket.
+FRED (Federal Reserve Economic Data) client for Market Mood.
 Fetches key real estate and housing market indicators.
 Free API — get a key at fred.stlouisfed.org/docs/api/api_key.html
 

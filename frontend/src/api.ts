@@ -23,5 +23,9 @@ export const getMarkets = () => api.get('/social/markets').then(r => r.data)
 // Refresh market data only (fast)
 export const refreshMarkets = () => api.post('/social/markets/refresh').then(r => r.data)
 
+// ── Settings ───────────────────────────────────────────────────────────────
+export const updateSchedule = (minutes: number) =>
+  api.post('/settings/schedule', { minutes }).then(r => r.data)
+
 // ── Health ─────────────────────────────────────────────────────────────────
 export const getHealth = () => api.get('/health').then(r => r.data)

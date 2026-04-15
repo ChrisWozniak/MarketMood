@@ -1,5 +1,5 @@
 """
-Redfin Data Center client for MoodMarket.
+Redfin Data Center client for Market Mood.
 Pulls publicly available weekly housing market CSVs — no API key needed.
 Data center: redfin.com/news/data-center
 

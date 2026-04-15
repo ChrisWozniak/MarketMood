@@ -1,5 +1,5 @@
 """
-Technology momentum analyzer for MoodMarket.
+Technology momentum analyzer for Market Mood.
 Uses Claude to identify which technologies are gaining vs losing
 public confidence based on trending topics and discussion patterns.
 """

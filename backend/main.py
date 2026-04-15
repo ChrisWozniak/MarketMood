@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown(wait=False)
 
 
-app = FastAPI(title="MoodMarket API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Market Mood API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +48,17 @@ app.include_router(social.router,    prefix="/api/social",    tags=["social"])
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/api/settings/schedule")
+def update_schedule(body: dict):
+    minutes = int(body.get("minutes", 60))
+    if minutes < 5 or minutes > 1440:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Interval must be between 5 and 1440 minutes.")
+    from services.scheduler import reschedule
+    reschedule(minutes)
+    return {"status": "ok", "interval_minutes": minutes}
 
 
 FRONTEND_DIST = os.path.normpath(

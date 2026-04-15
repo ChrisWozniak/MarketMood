@@ -28,7 +28,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   'Blockchain & Crypto':  '#f97316',
   'Sector Sentiment':     '#0ea5e9',
   'Real Estate':          '#10b981',
-  'Prediction Markets':   '#a78bfa',
+  'Health & Science':     '#a78bfa',
   'Daily Hot Topics':     '#ec4899',
 }
 const PLATFORM_ICON: Record<string, string> = {
@@ -104,47 +104,43 @@ function TopicRow({ t }: { t: Topic }) {
 
       {/* Subtopics — shown when open */}
       {open && (
-        <div className="px-4 pb-4 pt-2 border-t border-slate-600 bg-slate-800">
+        <div className="px-4 pb-3 pt-2 border-t border-slate-600 bg-slate-800">
           {t.sub_topics && t.sub_topics.length > 0 ? (
-            <>
-              <p className="text-slate-400 text-xs mb-2 font-semibold uppercase tracking-wider">
-                Hot subtopics — click to read news
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {t.sub_topics.map(st => (
-                  <a
-                    key={st}
-                    href={newsSearchUrl(`${t.category} ${st}`)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="text-xs px-3 py-1.5 rounded-full transition-all hover:opacity-80 hover:scale-105 cursor-pointer"
-                    style={{ background: color + '25', color, border: `1px solid ${color}55` }}
-                  >
-                    🔍 {st}
-                  </a>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-slate-500 text-xs shrink-0">Trending:</span>
+              {t.sub_topics.slice(0, 3).map(st => (
+                <a
+                  key={st}
+                  href={newsSearchUrl(st)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="text-xs px-2.5 py-1 rounded-full transition-all hover:opacity-80 cursor-pointer shrink-0"
+                  style={{ background: color + '20', color, border: `1px solid ${color}44` }}
+                >
+                  {st}
+                </a>
+              ))}
               <a
                 href={newsSearchUrl(t.category)}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="inline-flex items-center gap-1 mt-3 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors shrink-0 ml-1"
               >
-                View all {t.category} news →
+                more →
               </a>
-            </>
+            </div>
           ) : (
             <div className="flex items-center gap-3">
-              <p className="text-slate-500 text-sm">No subtopics available.</p>
+              <p className="text-slate-500 text-sm">No topics available.</p>
               <a
                 href={newsSearchUrl(t.category)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
               >
-                Search {t.category} news →
+                Search news →
               </a>
             </div>
           )}

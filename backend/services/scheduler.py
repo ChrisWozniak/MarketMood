@@ -1,5 +1,5 @@
 """
-Scheduler for MoodMarket — runs hourly social analysis automatically.
+Scheduler for Market Mood — runs hourly social analysis automatically.
 """
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -22,7 +22,7 @@ async def run_social_job():
 
 
 def start_social_schedule(refresh_hours: int = DEFAULT_REFRESH_HOURS):
-    """Start or restart the hourly social analysis job."""
+    """Start or restart the social analysis job."""
     trigger = IntervalTrigger(hours=refresh_hours)
     scheduler.add_job(
         lambda: asyncio.ensure_future(run_social_job()),
@@ -31,3 +31,15 @@ def start_social_schedule(refresh_hours: int = DEFAULT_REFRESH_HOURS):
         replace_existing=True,
     )
     print(f"[scheduler] Social analysis scheduled every {refresh_hours}h")
+
+
+def reschedule(minutes: int):
+    """Dynamically change the analysis interval without restarting."""
+    trigger = IntervalTrigger(minutes=minutes)
+    scheduler.add_job(
+        lambda: asyncio.ensure_future(run_social_job()),
+        trigger=trigger,
+        id=SOCIAL_JOB_ID,
+        replace_existing=True,
+    )
+    print(f"[scheduler] Rescheduled to every {minutes}min")

@@ -20,6 +20,7 @@ def get_latest_signals(session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="No data yet. Run /api/sentiment/analyze first.")
     s = snapshots[0]
     platform_data = json.loads(s.platform_data)
+
     return {
         "captured_at": s.captured_at.isoformat(),
         "investment_signals": platform_data.get("investment_signals", []),

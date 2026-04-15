@@ -68,6 +68,26 @@ html.light .bg-slate-750            { background-color: #d8e0eb !important; }
 html.light ::-webkit-scrollbar-track { background: #e2e8f0; }
 html.light ::-webkit-scrollbar-thumb { background: #94a3b8; }
 
+/* ── Disclaimer hover — override !important slate colors in light mode ── */
+@media (min-width: 768px) {
+  html.light .disclaimer-group:hover p {
+    color: #dc2626 !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+}
+
+/* ── Settings divider blink ──────────────────────────────────── */
+@keyframes settings-blink {
+  0%, 100% { color: #ef4444; }
+  50%       { color: transparent; }
+}
+.settings-blink {
+  animation: settings-blink 0.5s step-start 5;
+  color: #ef4444;
+}
+html.light .settings-blink { color: #dc2626; }
+
 /* ── Dark mode scrollbar ─────────────────────────────────────── */
 #root { min-height: 100vh; }
 ::-webkit-scrollbar { width: 6px; }

@@ -78,15 +78,18 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
 
   return (
     <Card accent="#8b5cf6">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-slate-200 font-semibold">
+      <div
+        className="flex items-center justify-between mb-1 cursor-pointer group"
+        onClick={onToggleCollapse}
+      >
+        <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
           📊 Prediction Market Pulse
-          <InfoTooltip text="Live prediction market data from Kalshi and Polymarket — real money bets on real outcomes. Higher volume = stronger conviction." />
+          <span onClick={e => e.stopPropagation()}><InfoTooltip text="Live prediction market data from Kalshi and Polymarket — real money bets on real outcomes. Higher volume = stronger conviction." /></span>
         </h3>
         <div className="flex items-center gap-2">
           {!collapsed && (
             <button
-              onClick={handleRefresh}
+              onClick={e => { e.stopPropagation(); handleRefresh() }}
               disabled={refreshing}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
             >
@@ -96,7 +99,7 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
           )}
           {onToggleCollapse && (
             <button
-              onClick={onToggleCollapse}
+              onClick={e => { e.stopPropagation(); onToggleCollapse() }}
               className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700"
               title={collapsed ? 'Expand' : 'Collapse'}
             >
