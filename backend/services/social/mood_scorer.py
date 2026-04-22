@@ -309,22 +309,75 @@ def _top_posts_by_engagement(posts: list[dict], n: int) -> list[dict]:
     )[:n]
 
 
+# Patterns that indicate a tutorial, tool release, or personal project — not news
+_NON_NEWS_PATTERNS = (
+    "how to ", "how i ", "tutorial", " guide", "beginner",
+    "introduction to", "getting started", "step by step",
+    " using ", "i built", "i made", "i wrote", "i created",
+    "open source", "github.com", "gitlab.com", "v1.", "v2.", "v3.",
+    "[pdf]", "[video]", "ask hn:", "show hn:", "tell hn:",
+)
+
+# Words that signal a truncated fragment when found at the end of a topic
+_BAD_ENDINGS = {
+    'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of',
+    'and', 'or', 'using', 'with', 'by', 'from', 'via', 'as',
+}
+
+
+def _is_newsworthy(post: dict, min_engagement: int = 8) -> bool:
+    """Return True only if a post looks like real news, not a tutorial or tool."""
+    title = (post.get("title") or "").strip()
+    score = post.get("score", 0)
+    comments = post.get("num_comments", 0)
+    if not title or len(title.split()) < 5:
+        return False
+    if score + comments < min_engagement:
+        return False
+    lower = title.lower()
+    if any(pat in lower for pat in _NON_NEWS_PATTERNS):
+        return False
+    return True
+
+
+def _is_valid_topic(topic: str) -> bool:
+    """Reject obviously bad Gemini-generated topics — fragments, too short, bad endings."""
+    words = topic.strip().split()
+    if len(words) < 3:
+        return False
+    if words[-1].lower() in _BAD_ENDINGS:
+        return False
+    return True
+
+
 def _hot_topics_fallback(posts: list[dict]) -> list[str]:
-    """Fallback: take top posts by engagement, truncate titles to 5 words."""
+    """Fallback: use complete titles from quality posts only — never truncate."""
+    STRIP_PREFIXES = ("TIL ", "TIL: ", "TIL that ", "Ask HN: ", "Show HN: ", "Tell HN: ")
     results = []
     seen: set[str] = set()
-    for p in _top_posts_by_engagement(posts, MAX_SUBTOPICS * 3):
+    quality = [p for p in posts if _is_newsworthy(p, min_engagement=5)]
+    for p in _top_posts_by_engagement(quality, MAX_SUBTOPICS * 4):
         title = p["title"].strip()
-        for prefix in ("TIL ", "TIL: ", "TIL that ", "Ask HN: ", "Show HN: ", "Tell HN: "):
+        for prefix in STRIP_PREFIXES:
             if title.startswith(prefix):
                 title = title[len(prefix):]
-        words = title.split()[:6]
-        while words and words[-1].lower() in {'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'}:
-            words.pop()
-        short = " ".join(words[:5])
-        if short and short.lower() not in seen:
-            seen.add(short.lower())
-            results.append(short)
+        words = title.split()
+        # Only keep titles already short enough to be meaningful on their own
+        if 4 <= len(words) <= 8:
+            candidate = title
+        elif len(words) > 8:
+            # Trim to 6 words but reject if the cut lands on a bad ending word
+            trimmed = words[:6]
+            while trimmed and trimmed[-1].lower() in _BAD_ENDINGS:
+                trimmed.pop()
+            if len(trimmed) < 4:
+                continue
+            candidate = " ".join(trimmed)
+        else:
+            continue
+        if candidate.lower() not in seen:
+            seen.add(candidate.lower())
+            results.append(candidate)
         if len(results) >= MAX_SUBTOPICS:
             break
     return results
@@ -378,32 +431,44 @@ async def extract_sub_topics(category: str, posts: list[dict]) -> list[str]:
 
 async def _extract_daily_hot_topics(posts: list[dict]) -> list[str]:
     """
-    For Daily Hot Topics: rank by engagement, compress each top story into
-    a short neutral headline. Falls back to title truncation.
+    For Daily Hot Topics: pre-filter for genuine news posts, give Gemini a wide
+    pool of quality titles to pick the most newsworthy topics from, then validate
+    the output rejects fragments. Falls back to complete titles — never truncates.
     """
-    top = _top_posts_by_engagement(posts, MAX_SUBTOPICS * 2)
-    titles = _clean_titles(top, limit=MAX_SUBTOPICS)
+    # Pre-filter: news posts only, drop tutorials/tools
+    quality = [p for p in posts if _is_newsworthy(p, min_engagement=8)]
+    # Relax threshold if not enough quality posts
+    if len(quality) < MAX_SUBTOPICS + 2:
+        quality = [p for p in posts if _is_newsworthy(p, min_engagement=3)]
+    if not quality:
+        return []
+
+    top = _top_posts_by_engagement(quality, 20)
+    titles = _clean_titles(top, limit=15)  # give Gemini wide signal pool
     if not titles:
         return []
 
     prompt = (
-        f"Compress each of these trending news headlines into a 3-5 word neutral summary.\n"
+        f"From these trending social posts, pick the {MAX_SUBTOPICS} topics that are "
+        f"genuinely newsworthy — widely discussed real-world events, decisions, or breaking news.\n"
         f"Good examples: 'Fluoride water safety review', 'Swalwell House resignation', "
         f"'Antarctic ice shelf collapse', 'Netflix password crackdown'.\n"
+        f"Skip: tutorials, personal projects, tool releases, opinion pieces, or anything not broadly relevant news.\n"
         f"{_TOPIC_RULES}"
-        f"Headlines:\n" + "\n".join(f"- {t}" for t in titles)
+        f"Posts:\n" + "\n".join(f"- {t}" for t in titles)
     )
 
     raw = await _gemini_call(prompt, max_tokens=150)
     if raw:
         try:
             result = _parse_gemini_list(raw)
-            if result:
-                return result[:MAX_SUBTOPICS]
+            valid = [r for r in result if _is_valid_topic(r)]
+            if valid:
+                return valid[:MAX_SUBTOPICS]
         except Exception:
             pass
 
-    return _hot_topics_fallback(posts)
+    return _hot_topics_fallback(quality)
 
 
 async def _extract_sector_topics(posts: list[dict]) -> list[str]:

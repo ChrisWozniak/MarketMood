@@ -78,47 +78,40 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
 
   return (
     <Card accent="#8b5cf6">
-      <button
-        type="button"
-        className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity"
-        onClick={onToggleCollapse}
-        aria-expanded={!collapsed}
-        aria-controls="market-content"
-      >
-        <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
-          📊 Prediction Market Pulse
-          <span onClick={e => e.stopPropagation()}><InfoTooltip text="Live prediction market data from Kalshi and Polymarket — real money bets on real outcomes. Higher volume = stronger conviction." /></span>
-        </h3>
-        <div className="flex items-center gap-2">
-          {!collapsed && (
-            <button
-              onClick={e => { e.stopPropagation(); handleRefresh() }}
-              disabled={refreshing}
-              type="button"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
-            >
-              {refreshing ? <Spinner size={14} hidden /> : '⚡'}
-              {refreshing ? 'Fetching…' : 'Refresh Now'}
-            </button>
-          )}
+      <div className="flex items-center justify-between mb-1 gap-2">
+        <button
+          type="button"
+          className="flex-1 flex items-center justify-between cursor-pointer group text-left hover:opacity-80 transition-opacity"
+          onClick={onToggleCollapse}
+          aria-expanded={!collapsed}
+          aria-controls="market-content"
+        >
+          <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
+            📊 Prediction Market Pulse
+            <span onClick={e => e.stopPropagation()}><InfoTooltip text="Live prediction market data from Kalshi and Polymarket — real money bets on real outcomes. Higher volume = stronger conviction." /></span>
+          </h3>
           {onToggleCollapse && (
             <span
               aria-hidden="true"
-              className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700"
+              className="text-slate-400 p-1 shrink-0"
+              style={{ display: 'inline-block', transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}
             >
-              <span
-                style={{
-                  display: 'inline-block',
-                  transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)',
-                  transition: 'transform 0.2s',
-                }}
-              >
-                ▼
-              </span>
+              ▼
             </span>
           )}
-        </div>
-      </button>
+        </button>
+        {!collapsed && (
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            type="button"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shrink-0"
+          >
+            {refreshing ? <Spinner size={14} hidden /> : '⚡'}
+            {refreshing ? 'Fetching…' : 'Refresh Now'}
+          </button>
+        )}
+      </div>
 
       {!collapsed && (
         <div id="market-content">

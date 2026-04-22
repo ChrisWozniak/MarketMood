@@ -102,7 +102,7 @@ function CheckboxGrid({
               {item.icon && <span>{item.icon}</span>}
               {item.name}
             </p>
-            <p className="text-slate-500 text-xs leading-tight md:group-hover/row:text-xs transition-all duration-200 truncate">
+            <p className="text-slate-400 text-xs leading-tight md:group-hover/row:text-xs transition-all duration-200 truncate">
               {item.desc}
             </p>
           </div>
@@ -244,6 +244,7 @@ export default function Settings() {
                 {SCHEDULE_OPTIONS.map(opt => (
                   <button
                     key={opt.minutes}
+                    type="button"
                     onClick={() => applySchedule(opt.minutes)}
                     className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                       intervalMinutes === opt.minutes
@@ -282,6 +283,7 @@ export default function Settings() {
                 <p className="text-slate-500 text-xs">FastAPI + SQLite</p>
               </div>
               <button
+                type="button"
                 onClick={checkHealth}
                 disabled={healthStatus === 'checking'}
                 className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
@@ -309,7 +311,7 @@ export default function Settings() {
             decisions. Sentiment signals are derived from public social media and may not reflect
             actual market conditions.
           </p>
-          <p className="text-slate-600 text-xs md:group-hover/disclaimer:text-sm md:group-hover/disclaimer:text-red-500 transition-all duration-200">
+          <p className="text-slate-500 text-xs md:group-hover/disclaimer:text-sm md:group-hover/disclaimer:text-red-500 transition-all duration-200">
             Aggregate data only — no individual user profiles stored.
           </p>
         </div>
