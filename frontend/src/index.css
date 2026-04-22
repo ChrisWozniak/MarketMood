@@ -88,6 +88,28 @@ html.light ::-webkit-scrollbar-thumb { background: #94a3b8; }
 }
 html.light .settings-blink { color: #dc2626; }
 
+/* ── Accessible Focus Indicators ─────────────────────────────── */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgb(99, 102, 241);
+  outline-offset: 2px;
+}
+
+/* Light mode focus (darker outline for visibility) */
+html.light button:focus-visible,
+html.light [role="button"]:focus-visible,
+html.light input:focus-visible,
+html.light a:focus-visible,
+html.light select:focus-visible,
+html.light textarea:focus-visible {
+  outline: 2px solid rgb(49, 46, 129);
+  outline-offset: 2px;
+}
+
 /* ── Dark mode scrollbar ─────────────────────────────────────── */
 #root { min-height: 100vh; }
 ::-webkit-scrollbar { width: 6px; }

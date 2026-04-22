@@ -55,13 +55,13 @@ const SIGNAL_STYLES = {
 const CONFIDENCE_STYLES = {
   high:   'text-indigo-400',
   medium: 'text-amber-400',
-  low:    'text-slate-500',
+  low:    'text-slate-300',
 }
 
 const DIRECTION_STYLES = {
   rising:   { icon: '↑', color: 'text-emerald-400' },
   declining:{ icon: '↓', color: 'text-red-400' },
-  stable:   { icon: '→', color: 'text-slate-400' },
+  stable:   { icon: '→', color: 'text-slate-300' },
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -230,13 +230,15 @@ export default function SocialDashboard() {
         <div>
           <h2 className="text-slate-200 font-semibold text-lg">Market Mood</h2>
           {data && !analyzing && (
-            <p className="text-slate-500 text-xs mt-0.5">
+            <p className="text-slate-300 text-xs mt-0.5">
               Last updated: {new Date((data.captured_at as string) + 'Z').toLocaleString()}
             </p>
           )}
-          {analyzing && stageMsg && (
-            <p className="text-indigo-400 text-xs mt-0.5 animate-pulse">{stageMsg}</p>
-          )}
+          <div aria-live="assertive" aria-atomic="true">
+            {analyzing && stageMsg && (
+              <p className="text-indigo-400 text-xs mt-0.5 animate-pulse">{stageMsg}</p>
+            )}
+          </div>
         </div>
         <button
           onClick={handleAnalyze}
@@ -275,22 +277,22 @@ export default function SocialDashboard() {
           {/* ── Social Mood Barometer ── */}
           {Object.keys(moodScores).length > 0 && (
             <Card accent="#6366f1">
-              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setMoodOpen(o => !o)}>
+              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMoodOpen(o => !o)} aria-expanded={moodOpen} aria-controls="mood-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Social Mood
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Gemini Flash from Reddit, Hacker News, YouTube, FRED, and Redfin." /></span>
                 </h3>
-                <CollapseButton open={moodOpen} onClick={() => setMoodOpen(o => !o)} />
-              </div>
+                <CollapseButton open={moodOpen} onClick={() => {}} />
+              </button>
               {moodOpen && (
-                <>
-                  <p className="text-slate-500 text-xs mb-4">Crowd sentiment per category — scored by Gemini AI from live social posts</p>
+                <div id="mood-content">
+                  <p className="text-slate-300 text-xs mb-4">Crowd sentiment per category — scored by Gemini AI from live social posts</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {Object.entries(moodScores).map(([cat, mood]) => (
                       <MoodGauge key={cat} category={cat} data={mood} />
                     ))}
                   </div>
-                </>
+                </div>
               )}
             </Card>
           )}
@@ -298,22 +300,22 @@ export default function SocialDashboard() {
           {/* ── Investment Signals ── */}
           {investmentSignals.length > 0 && (
             <Card accent="#22c55e">
-              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setSignalsOpen(o => !o)}>
+              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setSignalsOpen(o => !o)} aria-expanded={signalsOpen} aria-controls="signals-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Investment Signals
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Gemini Pro synthesizes social mood, prediction market probabilities, and housing data into sector and ticker signals. Informational only — not financial advice." /></span>
                 </h3>
-                <CollapseButton open={signalsOpen} onClick={() => setSignalsOpen(o => !o)} />
-              </div>
+                <CollapseButton open={signalsOpen} onClick={() => {}} />
+              </button>
               {signalsOpen && (
-                <>
-                  <p className="text-slate-500 text-xs mb-4">AI-generated market implications based on current social sentiment — not financial advice</p>
+                <div id="signals-content">
+                  <p className="text-slate-300 text-xs mb-4">AI-generated market implications based on current social sentiment — not financial advice</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {investmentSignals.map(sig => (
                       <SignalCard key={sig.category} signal={sig} />
                     ))}
                   </div>
-                </>
+                </div>
               )}
             </Card>
           )}
@@ -321,22 +323,22 @@ export default function SocialDashboard() {
           {/* ── Tech Momentum ── */}
           {techMomentum.length > 0 && (
             <Card accent="#f59e0b">
-              <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setMomentumOpen(o => !o)}>
+              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMomentumOpen(o => !o)} aria-expanded={momentumOpen} aria-controls="momentum-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Tech Momentum
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Which technologies and companies are gaining or losing developer mindshare, based on social discussion patterns." /></span>
                 </h3>
-                <CollapseButton open={momentumOpen} onClick={() => setMomentumOpen(o => !o)} />
-              </div>
+                <CollapseButton open={momentumOpen} onClick={() => {}} />
+              </button>
               {momentumOpen && (
-                <>
-                  <p className="text-slate-500 text-xs mb-4">Rising and declining technologies based on social discussion volume and sentiment</p>
+                <div id="momentum-content">
+                  <p className="text-slate-300 text-xs mb-4">Rising and declining technologies based on social discussion volume and sentiment</p>
                   <div>
                     {techMomentum.map(item => (
                       <MomentumRow key={item.technology} item={item} />
                     ))}
                   </div>
-                </>
+                </div>
               )}
             </Card>
           )}

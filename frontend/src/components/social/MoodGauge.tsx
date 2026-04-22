@@ -28,7 +28,11 @@ export default function MoodGauge({ category, data }: Props) {
   return (
     <div className="bg-slate-900 rounded-xl p-4 flex flex-col items-center text-center">
       <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">{category}</p>
-      <div style={{ width: 100, height: 60, position: 'relative' }}>
+      <div
+        style={{ width: 100, height: 60, position: 'relative' }}
+        aria-label={noData ? `${category} sentiment gauge - no data available` : `${category} sentiment gauge showing ${data.score > 0 ? '+' : ''}${data.score} score, ${data.label} mood`}
+        role="img"
+      >
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             innerRadius="70%"
