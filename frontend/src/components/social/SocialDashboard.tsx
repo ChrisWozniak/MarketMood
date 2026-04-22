@@ -90,7 +90,7 @@ function SignalCard({ signal }: { signal: InvestmentSignal }) {
           {style.label}
         </span>
       </div>
-      <p className="text-slate-400 text-xs leading-relaxed">{signal.insight}</p>
+      <p className="text-slate-300 text-xs leading-relaxed">{signal.insight}</p>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex gap-1 flex-wrap">
           {signal.tickers.map(t => (
@@ -117,7 +117,7 @@ function MomentumRow({ item }: { item: TechMomentumItem }) {
           <span className={`text-base font-bold ${dir.color}`}>{dir.icon}</span>
           <span className="text-slate-200 font-medium text-sm">{item.technology}</span>
         </div>
-        <span className="text-slate-500 text-xs">{item.momentum_score}/100</span>
+        <span className="text-slate-400 text-xs">{item.momentum_score}/100</span>
       </div>
       {/* Momentum bar */}
       <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
@@ -129,7 +129,7 @@ function MomentumRow({ item }: { item: TechMomentumItem }) {
           style={{ width: `${item.momentum_score}%` }}
         />
       </div>
-      <p className="text-slate-500 text-xs leading-relaxed">{item.insight}</p>
+      <p className="text-slate-400 text-xs leading-relaxed">{item.insight}</p>
       <div className="flex gap-1 flex-wrap">
         {item.proxy_tickers.map(t => (
           <span key={t} className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
@@ -137,7 +137,7 @@ function MomentumRow({ item }: { item: TechMomentumItem }) {
           </span>
         ))}
         {item.key_companies.map(c => (
-          <span key={c} className="text-xs bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded">
+          <span key={c} className="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded">
             {c}
           </span>
         ))}
@@ -245,7 +245,7 @@ export default function SocialDashboard() {
           disabled={analyzing}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
         >
-          {analyzing ? <Spinner size={14} /> : '⚡'}
+          {analyzing ? <Spinner size={14} hidden /> : '⚡'}
           {analyzing ? 'Working…' : 'Refresh Now'}
         </button>
       </div>
@@ -257,7 +257,7 @@ export default function SocialDashboard() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-16"><Spinner size={36} /></div>
+        <div className="flex justify-center py-16"><Spinner size={36} label="Loading dashboard data" /></div>
       ) : !data ? (
         <Card>
           <div className="text-center py-8">
@@ -267,7 +267,7 @@ export default function SocialDashboard() {
               disabled={analyzing}
               className="flex items-center gap-2 mx-auto bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl transition-colors"
             >
-              {analyzing && <Spinner size={14} />}
+              {analyzing && <Spinner size={14} hidden />}
               {analyzing ? 'Working…' : '⚡ Run Analysis'}
             </button>
           </div>
@@ -345,18 +345,18 @@ export default function SocialDashboard() {
 
           {/* ── Trending Topics ── */}
           <Card accent="#818cf8">
-            <div className="flex items-center justify-between mb-1 cursor-pointer group" onClick={() => setTopicsOpen(o => !o)}>
+            <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setTopicsOpen(o => !o)} aria-expanded={topicsOpen} aria-controls="topics-content">
               <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                 Trending Topics
                 <span onClick={e => e.stopPropagation()}><InfoTooltip text="Most discussed subjects ranked by engagement volume across Reddit and Hacker News." /></span>
               </h3>
-              <CollapseButton open={topicsOpen} onClick={() => setTopicsOpen(o => !o)} />
-            </div>
+              <CollapseButton open={topicsOpen} onClick={() => {}} />
+            </button>
             {topicsOpen && (
-              <>
+              <div id="topics-content">
                 <p className="text-slate-500 text-xs mb-4">% bar = relative engagement vs. top topic — click any row to expand subtopics</p>
                 <TrendingTopics topics={trendingTopics as Parameters<typeof TrendingTopics>[0]['topics']} />
-              </>
+              </div>
             )}
           </Card>
 

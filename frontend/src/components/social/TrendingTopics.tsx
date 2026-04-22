@@ -52,6 +52,8 @@ function TopicRow({ t }: { t: Topic }) {
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-600 transition-colors text-left"
+        aria-expanded={open}
+        aria-label={`${open ? 'Collapse' : 'Expand'} ${t.category} details`}
       >
         <span className="text-slate-400 text-sm w-6 text-right font-mono shrink-0">#{t.rank}</span>
 
@@ -59,7 +61,7 @@ function TopicRow({ t }: { t: Topic }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
-              style={{ background: color + '25', color }}
+              style={{ background: color + '33', color }}
             >
               {t.category}
             </span>
@@ -74,7 +76,7 @@ function TopicRow({ t }: { t: Topic }) {
           </div>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             {t.platforms?.map(p => (
-              <span key={p} className="text-xs text-slate-400 flex items-center gap-1">
+              <span key={p} className="text-xs text-slate-300 flex items-center gap-1">
                 <span>{PLATFORM_ICON[p] || '•'}</span>
                 <span>{p}</span>
               </span>
@@ -91,9 +93,10 @@ function TopicRow({ t }: { t: Topic }) {
                 style={{ width: `${Math.min(t.volume_score, 100)}%`, background: color }}
               />
             </div>
-            <span className="text-slate-600 text-xs leading-none">engagement</span>
+            <span className="text-slate-400 text-xs leading-none">engagement</span>
           </div>
           <span
+            aria-hidden="true"
             className="text-slate-400 text-xs transition-transform duration-200 ml-1"
             style={{ display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
           >

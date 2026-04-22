@@ -97,14 +97,14 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
               type="button"
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
             >
-              {refreshing ? <Spinner size={14} /> : '⚡'}
+              {refreshing ? <Spinner size={14} hidden /> : '⚡'}
               {refreshing ? 'Fetching…' : 'Refresh Now'}
             </button>
           )}
           {onToggleCollapse && (
             <span
+              aria-hidden="true"
               className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-700"
-              title={collapsed ? 'Expand' : 'Collapse'}
             >
               <span
                 style={{
@@ -132,9 +132,9 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
           )}
 
           {loading ? (
-            <div className="flex justify-center py-8"><Spinner size={28} /></div>
+            <div className="flex justify-center py-8"><Spinner size={28} label="Loading market data" /></div>
           ) : markets.length === 0 ? (
-            <div className="text-center py-8 space-y-3">
+            <div className="text-center py-8 space-y-3" aria-live="polite">
               <p className="text-slate-400 text-sm">No market data yet.</p>
               <p className="text-slate-600 text-xs max-w-xs mx-auto">
                 Click Refresh to fetch live data from Kalshi and Polymarket.
@@ -146,7 +146,7 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
                 type="button"
                 className="flex items-center gap-2 mx-auto bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white text-sm px-5 py-2.5 rounded-xl transition-colors"
               >
-                {refreshing && <Spinner size={14} />}
+                {refreshing && <Spinner size={14} hidden />}
                 {refreshing ? 'Fetching…' : '↻ Fetch Markets Now'}
               </button>
             </div>
@@ -161,7 +161,7 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
                         <span
                           className="text-xs font-semibold px-2 py-0.5 rounded-full"
                           style={{
-                            background: (SOURCE_COLORS[m.source] || '#94a3b8') + '25',
+                            background: (SOURCE_COLORS[m.source] || '#94a3b8') + '33',
                             color: SOURCE_COLORS[m.source] || '#94a3b8',
                           }}
                         >
@@ -169,12 +169,12 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
                         </span>
                         <span
                           className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          style={{ background: color + '18', color }}
+                          style={{ background: color + '28', color }}
                         >
                           {m.category}
                         </span>
                       </div>
-                      <span className="text-xs text-slate-400 shrink-0">{fmtVolume(m.volume_usd)} traded</span>
+                      <span className="text-xs text-slate-300 shrink-0">{fmtVolume(m.volume_usd)} traded</span>
                     </div>
 
                     <p className="text-slate-200 text-sm leading-relaxed mb-3">{m.question}</p>

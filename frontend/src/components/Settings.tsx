@@ -48,12 +48,15 @@ function loadBoolMap(key: string, names: string[]): Record<string, boolean> {
 }
 
 function CollapseHeader({
-  title, open, onToggle, accent,
-}: { title: string; open: boolean; onToggle: () => void; accent?: string }) {
+  title, open, onToggle, accent, controlsId,
+}: { title: string; open: boolean; onToggle: () => void; accent?: string; controlsId: string }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       className="w-full flex items-center justify-between gap-2 group"
+      aria-expanded={open}
+      aria-controls={controlsId}
     >
       <h3
         className="text-slate-200 font-semibold text-sm md:group-hover:text-base transition-all duration-200"
@@ -62,6 +65,7 @@ function CollapseHeader({
         {title}
       </h3>
       <span
+        aria-hidden="true"
         className="text-slate-500 text-xs transition-transform duration-200 shrink-0"
         style={{ display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
       >
@@ -190,9 +194,10 @@ export default function Settings() {
           title="Data Sources & Monitored Categories"
           open={sourcesOpen}
           onToggle={() => setSourcesOpen(o => !o)}
+          controlsId="sources-content"
         />
         {sourcesOpen && (
-          <div className="mt-4 space-y-5">
+          <div id="sources-content" className="mt-4 space-y-5">
             <div>
               <p className="text-slate-500 text-xs mb-3 font-medium uppercase tracking-wider">
                 Data Sources
@@ -223,9 +228,10 @@ export default function Settings() {
           title="Analysis Schedule"
           open={scheduleOpen}
           onToggle={() => setScheduleOpen(o => !o)}
+          controlsId="schedule-content"
         />
         {scheduleOpen && (
-          <div className="mt-4 space-y-4">
+          <div id="schedule-content" className="mt-4 space-y-4">
             <p className="text-slate-500 text-xs">
               The backend runs a full analysis automatically at the selected interval via APScheduler.
               Use the ⚡ Refresh Now button at the top for an immediate run.
@@ -249,9 +255,9 @@ export default function Settings() {
                   </button>
                 ))}
               </div>
-              <div className="mt-2 h-4">
+              <div className="mt-2 h-4" aria-live="polite" aria-atomic="true">
                 {scheduleStatus === 'saving' && (
-                  <p className="text-slate-500 text-xs flex items-center gap-1"><Spinner size={10} /> Updating…</p>
+                  <p className="text-slate-500 text-xs flex items-center gap-1"><Spinner size={10} hidden /> Updating…</p>
                 )}
                 {scheduleStatus === 'ok' && (
                   <p className="text-emerald-400 text-xs">● Schedule updated to {currentLabel}</p>
@@ -280,7 +286,7 @@ export default function Settings() {
                 disabled={healthStatus === 'checking'}
                 className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
               >
-                {healthStatus === 'checking' && <Spinner size={10} />}
+                {healthStatus === 'checking' && <Spinner size={10} hidden />}
                 {healthStatus === 'idle'     && 'Ping'}
                 {healthStatus === 'checking' && 'Checking…'}
                 {healthStatus === 'ok'       && <span className="text-emerald-400">● OK</span>}
