@@ -32,10 +32,11 @@ export default function InfoTooltip({ text }: Props) {
         <div
           id={tooltipId}
           role="tooltip"
-          className="absolute z-50 bottom-6 left-1/2 -translate-x-1/2 w-56 bg-slate-700 text-slate-200 text-xs rounded-xl shadow-xl p-3 leading-relaxed border border-slate-600"
+          className="absolute z-50 bottom-6 left-1/2 -translate-x-1/2 w-56 text-xs rounded-xl shadow-xl p-3 leading-relaxed"
+          style={{ backgroundColor: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' }}
         >
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-700" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#1e293b' }} />
         </div>
       )}
     </span>

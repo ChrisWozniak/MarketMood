@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CategoryDetail from './CategoryDetail'
+import { useStore } from '../../store'
 
 interface MoodData {
   score: number
@@ -44,6 +45,7 @@ const SIGNAL_ICON: Record<string, string> = {
 
 export default function CategoryBarometer({ category, data, signal, watchlistTickers }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const { darkMode } = useStore()
 
   const noData = data.score === 0 && data.label === 'Neutral'
     && (!data.dominant_emotions || data.dominant_emotions.length === 0)
@@ -104,9 +106,15 @@ export default function CategoryBarometer({ category, data, signal, watchlistTic
 
         {/* Scale labels */}
         <div className="flex justify-between mt-1 px-0.5">
-          <span className="text-red-500 text-xs">−100</span>
-          <span className="text-slate-500 text-xs">0</span>
-          <span className="text-green-600 text-xs">+100</span>
+          <div className="flex flex-col items-start">
+            <span className="text-red-500 text-xs">−100</span>
+            <span className="text-red-400/70 text-[10px] leading-tight">Max Negative</span>
+          </div>
+          <span className="text-slate-500 text-xs self-start">0</span>
+          <div className="flex flex-col items-end">
+            <span className="text-green-600 text-xs">+100</span>
+            <span className="text-green-600/70 text-[10px] leading-tight">Max Positive</span>
+          </div>
         </div>
 
         {/* Emotion pills */}
@@ -132,10 +140,16 @@ export default function CategoryBarometer({ category, data, signal, watchlistTic
                 onClick={e => e.stopPropagation()}
                 className={`text-xs font-mono px-2 py-0.5 rounded-full inline-block transition-colors duration-150 hover:text-white ${
                   signal?.signal === 'bullish'
-                    ? 'bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-600 hover:border-emerald-500'
+                    ? darkMode
+                      ? 'bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-600 hover:border-emerald-500'
+                      : 'bg-emerald-100 border border-emerald-400 text-emerald-800 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
                     : signal?.signal === 'bearish'
-                    ? 'bg-red-950/60 border border-red-700/60 text-red-300 hover:bg-red-600 hover:border-red-500'
-                    : 'bg-slate-800/60 border border-slate-600/60 text-slate-300 hover:bg-slate-600 hover:border-slate-500'
+                    ? darkMode
+                      ? 'bg-red-950/60 border border-red-700/60 text-red-300 hover:bg-red-600 hover:border-red-500'
+                      : 'bg-red-100 border border-red-400 text-red-800 hover:bg-red-500 hover:text-white hover:border-red-500'
+                    : darkMode
+                    ? 'bg-slate-800/60 border border-slate-600/60 text-slate-300 hover:bg-slate-600 hover:border-slate-500'
+                    : 'bg-slate-200 border border-slate-400 text-slate-700 hover:bg-slate-500 hover:text-white hover:border-slate-500'
                 }`}
               >
                 {sym}

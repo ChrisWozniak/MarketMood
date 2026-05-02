@@ -11,7 +11,7 @@ News Digest remains intact and runs independently.
 
 ---
 
-## Current State (as of May 2026, Session 7)
+## Current State (as of May 2026, Session 8)
 
 ### Backend — COMPLETE
 All backend files adapted for Market Mood. All AI services migrated from Anthropic Claude to Google
@@ -26,12 +26,38 @@ Light mode (Warm Paper theme) implemented. Hover blow-out effects on Investment 
 Momentum panels. All ticker badges throughout app are clickable links to Yahoo Finance.
 Custom Watchlist tickers shown as amber pills in the Social Mood barometer row.
 Email distribution UI added in Settings (Session 6). Scheduled report theme toggle added (Session 7).
+Session 8: Settings panels have InfoTooltip `?` explanation bubbles; slider end labels show "Max
+Negative" / "Max Positive"; light-mode watchlist ticker pills use mood-appropriate colors;
+InfoTooltip bubble forced always-dark via inline styles (bypasses light-mode CSS override).
 
-### Tests — ADDED (Sessions 5 & 6)
-- `backend/tests/test_sentiment.py` — 7 unit tests for sentiment fallback logic. No API key needed.
-- `backend/tests/test_signal_coherency.py` — 12 regression tests for investment signal coherency (schema, direction, deduplication, edge cases). Uses `_fallback_signals()` only — no API key needed.
+### Tests — 167 passing (Sessions 5–8)
 
-Run with: `pytest tests/ -v` from the backend directory.
+**Backend — 148 tests (pytest)**
+- `backend/tests/test_sentiment.py` — 7 tests: sentiment fallback logic
+- `backend/tests/test_signal_coherency.py` — 12 tests: investment signal schema/direction/dedup
+- `backend/tests/test_markets_client.py` — 29 tests: `_infer_category`, `_is_relevant`, `_clean_title`, dedup sort key
+- `backend/tests/test_email_builder.py` — 43 tests: `build_html_report`, all helpers, themes, empty inputs
+- `backend/tests/test_api_endpoints.py` — 26 tests: all read-path API routes via FastAPI TestClient + in-memory SQLite
+- `backend/tests/test_aggregator.py` — 9 tests: `run_social_analysis()` integration with all 15 external calls mocked
+- `backend/pytest.ini` — `asyncio_mode = auto`, `asyncio_default_fixture_loop_scope = function`
+- `backend/tests/conftest.py` — shared TestClient, in-memory StaticPool SQLite, `snapshot` + `market_snapshot` fixtures
+- `test_aggregator.py` uses its own `_AGG_ENGINE` (not conftest `TEST_ENGINE`) to avoid Python module-naming ambiguity
+
+**Frontend — 19 tests (Vitest + React Testing Library)**
+- `frontend/src/components/social/CategoryBarometer.test.tsx` — signal badges, slider positions, ticker pill colors, expand/collapse, noData state, emotion pill limit, Yahoo Finance links
+- `frontend/vitest.config.ts` — jsdom env, setupFiles pointing to `src/setupTests.ts`
+- `frontend/src/setupTests.ts` — `import '@testing-library/jest-dom/vitest'`
+
+**GitHub Actions CI:** `.github/workflows/tests.yml` — runs `pytest backend/tests/ -v` on push/PR.
+
+```powershell
+# Backend
+cd backend; .\venv\Scripts\Activate.ps1; pytest tests/ -v
+
+# Frontend
+cd frontend; npm test          # one-shot
+npm run test:watch             # watch mode
+```
 
 ---
 
@@ -165,11 +191,15 @@ collection is added (Reddit/HN/StockTwits raw data). At that point free tier fil
 - `frontend/src/components/Settings.tsx` — panel renamed "Analysis Schedule & Distribution"; Custom Watchlist limit 10→**5**; email distribution section: enable toggle, Gmail sender, App Password input, recipient list with add/remove/Enter, **scheduled report theme toggle** (🌙 Dark / ☀️ Light), Save Settings + Test Email buttons; loads config on mount; `handleTestEmail` always saves before testing
 - `frontend/src/components/social/SocialDashboard.tsx` — `watchlistTickers` state reads from localStorage; `darkMode` destructured from `useStore()`; `analyzeSentiment(tickers, darkMode ? 'dark' : 'light')` forwards current UI theme to backend so manual-run emails match the app's visual mode
 
+### Files updated in Session 8
+- `frontend/src/components/Settings.tsx` — `CollapseHeader` refactored from `<button>` to `div[role="button"]` (allows nested InfoTooltip button); optional `tooltip` prop added; InfoTooltip `?` bubbles added to all 3 panel headers (Data Sources, Custom Watchlist, Analysis Schedule & Distribution)
+- `frontend/src/components/social/CategoryBarometer.tsx` — imports `useStore` for `darkMode`; slider end labels now show "Max Negative" / "Max Positive" captions below −100 / +100; watchlist ticker pill classes conditional on `darkMode` (light mode: `bg-emerald-100` / `bg-red-100` / `bg-slate-200` instead of dark `/60` variants)
+- `frontend/src/components/InfoTooltip.tsx` — bubble uses inline styles (`backgroundColor: '#1e293b'`, `color: '#f1f5f9'`, `border: '1px solid #334155'`) instead of Tailwind classes, preventing light-mode CSS override from making the bubble cream-colored; caret arrow also uses inline `borderTopColor`
+
 ### Keep as-is
 - `frontend/src/components/social/TrendingTopics.tsx` — topic list with engagement bars
 - `frontend/src/components/Card.tsx` — universal card wrapper
 - `frontend/src/components/Spinner.tsx` — supports `label` and `hidden` props for accessibility
-- `frontend/src/components/InfoTooltip.tsx` — keyboard accessible (onFocus/onBlur/Escape), role="tooltip"
 - `frontend/src/tickerList.ts` — 128 tickers with `searchLocal(query)` helper; used by Custom Watchlist
 
 ### Deleted (orphaned)
@@ -193,7 +223,7 @@ collection is added (Reddit/HN/StockTwits raw data). At that point free tier fil
 | Scheduler | APScheduler — hourly social analysis |
 | Frontend | React 19 + Zustand + Recharts + Tailwind CSS v4 |
 | Build | Vite + TypeScript |
-| Testing | pytest (backend unit tests only; no API key needed) |
+| Testing | pytest + pytest-asyncio (backend, 148 tests); Vitest + RTL (frontend, 19 tests) |
 
 Note: Anthropic Claude was the original AI provider but switched to Google Gemini (free tier) after
 credits ran out. MongoDB Atlas was originally planned but SQLite kept for simplicity — migrate later
