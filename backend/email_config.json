@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "smtp_sender": "k8wozniak@gmail.com",
+  "smtp_password": "clcn qkcg atzr nqrh",
+  "recipients": [
+    "k8wozniak@gmail.com"
+  ],
+  "email_theme": "dark"
+}

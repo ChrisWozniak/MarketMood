@@ -20,6 +20,7 @@ async def generate_investment_signals(
     trending_topics: list,
     prediction_markets: list | None = None,
     housing_data: dict | None = None,
+    custom_tickers: list[str] | None = None,
 ) -> list[dict]:
     """
     Ask Claude to analyze mood scores, trending topics, prediction market
@@ -92,6 +93,21 @@ async def generate_investment_signals(
                 "REITs (VNQ), and mortgage-sensitive sectors."
             )
 
+    # Build custom watchlist section
+    watchlist_section = ""
+    if custom_tickers:
+        tickers_str = ", ".join(custom_tickers)
+        watchlist_section = (
+            f"\n\nCUSTOM WATCHLIST REQUEST:\n"
+            f"The user has specifically requested analysis for: {tickers_str}\n"
+            f"Add ONE additional signal object at the END of the array with:\n"
+            f"  \"category\": \"Custom Watchlist\"\n"
+            f"  \"signal\": bullish/bearish/neutral based on how current social mood affects these specific tickers\n"
+            f"  \"insight\": 2-3 sentences connecting today's market mood and macro signals to the outlook for these stocks\n"
+            f"  \"tickers\": {json.dumps(custom_tickers)}\n"
+            f"  \"confidence\": high/medium/low"
+        )
+
     prompt = f"""You are a senior financial analyst. Synthesize ALL of the following data layers \
 to generate investment signal insights. Weight prediction market probabilities heavily — \
 they represent the most calibrated crowd forecasts available.
@@ -100,7 +116,7 @@ SOCIAL MOOD SCORES (scale -100 to +100, scored by AI from Reddit/HN/YouTube):
 {mood_summary}
 
 TRENDING TOPICS (by discussion volume):
-{topics_summary}{markets_section}{housing_section}
+{topics_summary}{markets_section}{housing_section}{watchlist_section}
 
 For each category that has meaningful data, produce a JSON array of signal objects.
 Each object must have exactly these fields:
@@ -118,6 +134,7 @@ Rules:
 into a single directional view. Summarize what the collective crowd wisdom signals in 2-3 sentences \
 (e.g. geopolitical risk, macro uncertainty, rate path). Use tickers like VIX, TLT, GLD, SPY, IEF \
 as appropriate. Set confidence based on total traded volume across all markets.
+- If a Custom Watchlist was requested, include it as the final object in the array
 - This is informational analysis only, not financial advice
 Respond with ONLY valid JSON array, no other text."""
 

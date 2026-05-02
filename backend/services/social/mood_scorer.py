@@ -108,40 +108,36 @@ async def _gemini_call(prompt: str, max_tokens: int = 300) -> str | None:
 
 
 def _extract_subtopics_fallback(posts: list[dict], n: int = 5) -> list[str]:
-    titles = [p.get("title", "") for p in posts[:40] if p.get("title")]
-    if not titles:
-        return []
-
-    def tokenize(text: str) -> list[str]:
-        raw_tokens = re.findall(r"[A-Za-z][a-zA-Z']{2,}", text)
-        result = []
-        for t in raw_tokens:
-            # Strip apostrophe suffixes ('s, 't, 're, 've, 'll, etc.) before checking
-            clean = re.sub(r"'[a-z]{1,3}$", '', t.lower())
-            if clean not in STOP_WORDS and len(clean) > 3:
-                result.append(t)
-        return result
-
-    bigrams: list[str] = []
-    all_words: list[str] = []
-    for title in titles:
-        tokens = tokenize(title)
-        all_words.extend(tokens)
-        for i in range(len(tokens) - 1):
-            bigrams.append(f"{tokens[i]} {tokens[i+1]}")
-
-    bigram_counts = Counter(bigrams)
-    word_counts = Counter(all_words)
-    min_bigram_count = 2 if len(titles) >= 8 else 1
-    top_bigrams = [term for term, cnt in bigram_counts.most_common(n * 2)
-                   if cnt >= min_bigram_count]
-    top_words = []
-    for word, _ in word_counts.most_common(n * 3):
-        covered = any(word.lower() in bg.lower() for bg in top_bigrams)
-        if not covered:
-            top_words.append(word)
-
-    return (top_bigrams + top_words)[:n]
+    """Fallback: return the top-N complete titles from highest-engagement posts."""
+    STRIP_PREFIXES = ("TIL ", "TIL: ", "TIL that ", "Ask HN: ", "Show HN: ", "Tell HN: ")
+    results = []
+    seen: set[str] = set()
+    top = _top_posts_by_engagement(posts, n * 4)
+    for p in top:
+        title = p.get("title", "").strip()
+        if not title:
+            continue
+        for prefix in STRIP_PREFIXES:
+            if title.startswith(prefix):
+                title = title[len(prefix):]
+        words = title.split()
+        if len(words) < 4:
+            continue
+        # Trim very long titles to 9 words, avoiding bad endings
+        if len(words) > 9:
+            trimmed = words[:9]
+            while trimmed and trimmed[-1].lower() in _BAD_ENDINGS:
+                trimmed.pop()
+            if len(trimmed) < 4:
+                continue
+            title = " ".join(trimmed)
+        key = title.lower()
+        if key not in seen:
+            seen.add(key)
+            results.append(title)
+        if len(results) >= n:
+            break
+    return results
 
 
 async def score_mood(category: str, posts: list[dict]) -> dict:
@@ -187,6 +183,59 @@ Return only valid JSON."""
     except Exception as e:
         print(f"[mood_scorer] JSON parse error for {category}: {e}")
         return _score_mood_fallback(category, posts)
+
+
+async def score_watchlist_mood(tickers: list[str], all_posts: dict[str, list[dict]]) -> dict:
+    """Score sentiment for a custom watchlist using a cross-category pool of posts."""
+    # Flatten and rank all posts by engagement; take top 25 for broadest market signal
+    flat: list[dict] = []
+    for posts in all_posts.values():
+        flat.extend(posts)
+    flat.sort(key=lambda p: p.get("score", 0) + p.get("num_comments", 0), reverse=True)
+    sample = [p for p in flat if p.get("title")][:25]
+
+    if not sample:
+        return _empty_mood("Custom Watchlist")
+
+    tickers_str = ", ".join(tickers)
+    titles_text = "\n".join(f"- {p['title']}" for p in sample)
+    prompt = f"""Analyze these social media posts and score the current market sentiment \
+specifically for these assets: {tickers_str}.
+
+Consider how the macro environment, sector trends, and market mood in these posts \
+would affect the outlook for these particular stocks or assets.
+
+Posts:
+{titles_text}
+
+Return a JSON object with exactly these fields:
+{{
+  "score": <integer from -100 (very negative) to +100 (very positive)>,
+  "label": "<2-3 word sentiment label>",
+  "dominant_emotions": ["<emotion1>", "<emotion2>", "<emotion3>"],
+  "key_narratives": ["<narrative1>", "<narrative2>"],
+  "polarization_level": <1-10 or null>,
+  "trust_level": <1-10 or null>
+}}
+
+Return only valid JSON."""
+
+    raw = await _gemini_call(prompt, max_tokens=300)
+    if not raw:
+        return _score_mood_fallback("Custom Watchlist", sample)
+
+    try:
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("```")[1]
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        data = json.loads(cleaned.strip())
+        data["category"] = "Custom Watchlist"
+        return data
+    except Exception as e:
+        print(f"[mood_scorer] JSON parse error for Custom Watchlist: {e}")
+        return _score_mood_fallback("Custom Watchlist", sample)
 
 
 POSITIVE_WORDS = {
@@ -267,7 +316,7 @@ async def score_all_moods(
     return results
 
 
-MAX_SUBTOPICS = 3  # Maximum subtopics shown per category
+MAX_SUBTOPICS = 4  # Maximum subtopics shown per category
 
 
 def _clean_titles(posts: list[dict], limit: int = 20) -> list[str]:
@@ -343,7 +392,7 @@ def _is_newsworthy(post: dict, min_engagement: int = 8) -> bool:
 def _is_valid_topic(topic: str) -> bool:
     """Reject obviously bad Gemini-generated topics — fragments, too short, bad endings."""
     words = topic.strip().split()
-    if len(words) < 3:
+    if len(words) < 4:
         return False
     if words[-1].lower() in _BAD_ENDINGS:
         return False
@@ -385,12 +434,14 @@ def _hot_topics_fallback(posts: list[dict]) -> list[str]:
 
 # Shared prompt rules injected into every subtopic extraction call
 _TOPIC_RULES = (
-    "Rules for each topic:\n"
-    "- 3-5 words maximum\n"
-    "- Neutral, factual, journalistic language — no inflammatory, partisan, or sensationalist phrasing\n"
-    "- Name specific events, policies, companies, people, or issues\n"
-    "- Avoid generic filler words (time, people, things, world, situation)\n"
-    f"Return ONLY a JSON array of exactly {MAX_SUBTOPICS} short strings.\n"
+    "Rules for each headline:\n"
+    "- Write in newspaper headline style: 5-8 words, include a verb where possible\n"
+    "- Good: 'Fed holds rates at 4.25%', 'NVIDIA stock hits record high', 'China tariff deadline extended'\n"
+    "- Bad: 'rate decision', 'market conditions', 'tariff impact on'\n"
+    "- Neutral, factual language — no clickbait, opinion, or sensationalism\n"
+    "- Name specific events, people, companies, policies, or numbers\n"
+    "- Each headline must be a complete thought — never end on a preposition or article\n"
+    f"Return ONLY a JSON array of exactly {MAX_SUBTOPICS} headline strings.\n"
 )
 
 
@@ -409,10 +460,10 @@ async def extract_sub_topics(category: str, posts: list[dict]) -> list[str]:
         return []
 
     prompt = (
-        f"From these {category} social media post titles, identify the {MAX_SUBTOPICS} "
-        f"most newsworthy specific topics being discussed right now.\n"
-        f"Good examples: 'Fed rate decision', 'Gaza ceasefire talks', 'GPT-5 release', "
-        f"'mortgage rate rise', 'tariff impact'.\n"
+        f"From these {category} social media post titles, write {MAX_SUBTOPICS} "
+        f"newspaper-style headlines for the most newsworthy events being discussed right now.\n"
+        f"Good examples: 'Fed holds rates steady at 4.25%', 'Gaza ceasefire talks resume in Cairo', "
+        f"'GPT-5 beats benchmarks across all categories', 'Mortgage rates fall to 6.5%'.\n"
         f"{_TOPIC_RULES}"
         f"Titles:\n" + "\n".join(f"- {t}" for t in titles[:15])
     )
@@ -449,11 +500,12 @@ async def _extract_daily_hot_topics(posts: list[dict]) -> list[str]:
         return []
 
     prompt = (
-        f"From these trending social posts, pick the {MAX_SUBTOPICS} topics that are "
-        f"genuinely newsworthy — widely discussed real-world events, decisions, or breaking news.\n"
-        f"Good examples: 'Fluoride water safety review', 'Swalwell House resignation', "
-        f"'Antarctic ice shelf collapse', 'Netflix password crackdown'.\n"
-        f"Skip: tutorials, personal projects, tool releases, opinion pieces, or anything not broadly relevant news.\n"
+        f"From these trending social posts, write {MAX_SUBTOPICS} newspaper-style headlines "
+        f"for the most widely-discussed real-world events, decisions, or breaking news.\n"
+        f"Good examples: 'Fluoride ban proposed in federal drinking water rules', "
+        f"'Eric Swalwell resigns from House committee seat', "
+        f"'Antarctic ice shelf collapses into ocean', 'Netflix cracks down on password sharing'.\n"
+        f"Skip: tutorials, personal projects, tool releases, or opinion pieces.\n"
         f"{_TOPIC_RULES}"
         f"Posts:\n" + "\n".join(f"- {t}" for t in titles)
     )
@@ -482,11 +534,12 @@ async def _extract_sector_topics(posts: list[dict]) -> list[str]:
         return []
 
     prompt = (
-        f"From these Sector Sentiment posts, identify the {MAX_SUBTOPICS} most discussed topics.\n"
-        f"For each topic, identify its sector (Energy, Healthcare, Technology, Finance, "
-        f"Consumer, Industrial, Materials) and format as 'Sector: topic'.\n"
-        f"Good examples: 'Energy: natural gas prices', 'Healthcare: drug pricing bill', "
-        f"'Tech: data center demand', 'Finance: bank earnings'.\n"
+        f"From these Sector Sentiment posts, write {MAX_SUBTOPICS} sector-prefixed headlines "
+        f"for the most discussed events. Format each as 'Sector: headline'.\n"
+        f"Sectors: Energy, Healthcare, Technology, Finance, Consumer, Industrial, Materials.\n"
+        f"Good examples: 'Energy: natural gas prices spike 12%', "
+        f"'Healthcare: drug pricing bill passes Senate', "
+        f"'Tech: data center demand outpaces supply', 'Finance: big bank earnings beat forecasts'.\n"
         f"{_TOPIC_RULES}"
         f"Titles:\n" + "\n".join(f"- {t}" for t in titles[:15])
     )

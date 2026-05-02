@@ -21,20 +21,26 @@ const CONFIDENCE_STYLES = {
 export default function InvestmentSignal({ signal }: { signal: InvestmentSignalData }) {
   const style = SIGNAL_STYLES[signal.signal]
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-2">
+    <div className="group bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-2 transition-all duration-200 hover:shadow-xl hover:border-slate-500 cursor-default">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-slate-200 font-medium text-sm">{signal.category}</span>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${style.badge}`}>
           {style.label}
         </span>
       </div>
-      <p className="text-slate-300 text-xs leading-relaxed">{signal.insight}</p>
+      <p className="text-slate-300 text-xs leading-relaxed transition-all duration-200 group-hover:text-sm group-hover:text-slate-100">{signal.insight}</p>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex gap-1 flex-wrap">
           {signal.tickers.map(t => (
-            <span key={t} className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
+            <a
+              key={t}
+              href={`https://finance.yahoo.com/quote/${t}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded hover:bg-indigo-600 hover:text-white transition-colors duration-150"
+            >
               {t}
-            </span>
+            </a>
           ))}
         </div>
         <span className={`text-xs font-medium ${CONFIDENCE_STYLES[signal.confidence]}`}>

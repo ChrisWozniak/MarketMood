@@ -47,12 +47,17 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
+function loadWatchlist(): string[] {
+  try { return JSON.parse(localStorage.getItem('mm_watchlist_tickers') || '[]') } catch { return [] }
+}
+
 export default function SocialDashboard() {
-  const [data, setData]           = useState<Record<string, unknown> | null>(null)
-  const [signals, setSignals]     = useState<{ investment_signals: InvestmentSignalData[]; tech_momentum: TechMomentumItem[] } | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [analyzing, setAnalyzing] = useState(false)
-  const [stageMsg, setStageMsg]   = useState('')
+  const [data, setData]                     = useState<Record<string, unknown> | null>(null)
+  const [signals, setSignals]               = useState<{ investment_signals: InvestmentSignalData[]; tech_momentum: TechMomentumItem[] } | null>(null)
+  const [loading, setLoading]               = useState(true)
+  const [analyzing, setAnalyzing]           = useState(false)
+  const [stageMsg, setStageMsg]             = useState('')
+  const [watchlistTickers, setWatchlistTickers] = useState<string[]>(loadWatchlist)
 
   const [moodOpen,     setMoodOpen]     = useState(true)
   const [signalsOpen,  setSignalsOpen]  = useState(false)
@@ -60,7 +65,7 @@ export default function SocialDashboard() {
   const [topicsOpen,   setTopicsOpen]   = useState(false)
   const [marketsOpen,  setMarketsOpen]  = useState(false)
 
-  const { panelCollapse } = useStore()
+  const { panelCollapse, darkMode } = useStore()
   useEffect(() => {
     if (panelCollapse === null) return
     setMoodOpen(!panelCollapse)
@@ -103,7 +108,9 @@ export default function SocialDashboard() {
     setStageMsg(ANALYSIS_STAGES[0].msg)
     startStageMessages()
     try {
-      await analyzeSentiment()
+      const watchlist = loadWatchlist()
+      setWatchlistTickers(watchlist)
+      await analyzeSentiment(watchlist.length ? watchlist : undefined, darkMode ? 'dark' : 'light')
       toast.success('Analysis complete!')
       loadAll()
     } catch {
@@ -145,7 +152,7 @@ export default function SocialDashboard() {
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
         >
           {analyzing ? <Spinner size={14} hidden /> : '⚡'}
-          {analyzing ? 'Working…' : 'Refresh Now'}
+          {analyzing ? 'Working…' : 'Run Now'}
         </button>
       </div>
 
@@ -177,13 +184,13 @@ export default function SocialDashboard() {
           {/* ── Social Mood Barometer ── */}
           {Object.keys(moodScores).length > 0 && (
             <Card accent="#6366f1">
-              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMoodOpen(o => !o)} aria-expanded={moodOpen} aria-controls="mood-content">
+              <div role="button" tabIndex={0} className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMoodOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMoodOpen(o => !o) } }} aria-expanded={moodOpen} aria-controls="mood-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Social Mood
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Sentiment score from -100 (very negative) to +100 (very positive), scored by Gemini Flash from Reddit, Hacker News, YouTube, FRED, and Redfin." /></span>
                 </h3>
                 <ChevronIcon open={moodOpen} />
-              </button>
+              </div>
               {moodOpen && (
                 <div id="mood-content">
                   <p className="text-slate-300 text-xs mb-4">Click any category to see investment signals and tickers</p>
@@ -196,6 +203,7 @@ export default function SocialDashboard() {
                           category={cat}
                           data={mood}
                           signal={sig ? { signal: sig.signal, insight: sig.insight, tickers: sig.tickers, confidence: sig.confidence } : undefined}
+                          watchlistTickers={cat === 'Custom Watchlist' ? watchlistTickers : undefined}
                         />
                       )
                     })}
@@ -208,13 +216,13 @@ export default function SocialDashboard() {
           {/* ── Investment Signals ── */}
           {investmentSignals.length > 0 && (
             <Card accent="#22c55e">
-              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setSignalsOpen(o => !o)} aria-expanded={signalsOpen} aria-controls="signals-content">
+              <div role="button" tabIndex={0} className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setSignalsOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSignalsOpen(o => !o) } }} aria-expanded={signalsOpen} aria-controls="signals-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Investment Signals
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Gemini Pro synthesizes social mood, prediction market probabilities, and housing data into sector and ticker signals. Informational only — not financial advice." /></span>
                 </h3>
                 <ChevronIcon open={signalsOpen} />
-              </button>
+              </div>
               {signalsOpen && (
                 <div id="signals-content">
                   <p className="text-slate-300 text-xs mb-4">AI-generated market implications based on current social sentiment — not financial advice</p>
@@ -231,13 +239,13 @@ export default function SocialDashboard() {
           {/* ── Tech Momentum ── */}
           {techMomentum.length > 0 && (
             <Card accent="#f59e0b">
-              <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMomentumOpen(o => !o)} aria-expanded={momentumOpen} aria-controls="momentum-content">
+              <div role="button" tabIndex={0} className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setMomentumOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMomentumOpen(o => !o) } }} aria-expanded={momentumOpen} aria-controls="momentum-content">
                 <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                   Tech Momentum
                   <span onClick={e => e.stopPropagation()}><InfoTooltip text="Which technologies and companies are gaining or losing developer mindshare, based on social discussion patterns." /></span>
                 </h3>
                 <ChevronIcon open={momentumOpen} />
-              </button>
+              </div>
               {momentumOpen && (
                 <div id="momentum-content">
                   <p className="text-slate-300 text-xs mb-4">Rising and declining technologies based on social discussion volume and sentiment</p>
@@ -249,13 +257,13 @@ export default function SocialDashboard() {
 
           {/* ── Trending Topics ── */}
           <Card accent="#818cf8">
-            <button type="button" className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setTopicsOpen(o => !o)} aria-expanded={topicsOpen} aria-controls="topics-content">
+            <div role="button" tabIndex={0} className="w-full flex items-center justify-between mb-1 cursor-pointer group text-left hover:opacity-80 transition-opacity" onClick={() => setTopicsOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTopicsOpen(o => !o) } }} aria-expanded={topicsOpen} aria-controls="topics-content">
               <h3 className="text-slate-200 font-semibold md:group-hover:text-lg transition-all duration-200 flex items-center gap-1">
                 Trending Topics
                 <span onClick={e => e.stopPropagation()}><InfoTooltip text="Most discussed subjects ranked by engagement volume across Reddit and Hacker News." /></span>
               </h3>
               <ChevronIcon open={topicsOpen} />
-            </button>
+            </div>
             {topicsOpen && (
               <div id="topics-content">
                 <p className="text-slate-500 text-xs mb-4">% bar = relative engagement vs. top topic — click any row to expand subtopics</p>

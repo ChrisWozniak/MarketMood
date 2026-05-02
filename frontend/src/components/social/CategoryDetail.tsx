@@ -62,7 +62,7 @@ export default function CategoryDetail({ category, data, signal }: Props) {
           </div>
 
           {/* Insight */}
-          <p className="text-slate-300 text-xs leading-relaxed">{signal.insight}</p>
+          <p className="text-slate-300 text-xs leading-relaxed transition-all duration-200 hover:text-sm hover:text-slate-100 cursor-default">{signal.insight}</p>
 
           {/* Tickers */}
           {signal.tickers.length > 0 && (
@@ -70,9 +70,15 @@ export default function CategoryDetail({ category, data, signal }: Props) {
               <p className="text-slate-500 text-xs mb-1.5 font-medium uppercase tracking-wider">Related tickers</p>
               <div className="flex gap-1.5 flex-wrap">
                 {signal.tickers.map(t => (
-                  <span key={t} className="text-xs font-mono bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-600">
+                  <a
+                    key={t}
+                    href={`https://finance.yahoo.com/quote/${t}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-colors duration-150"
+                  >
                     {t}
-                  </span>
+                  </a>
                 ))}
               </div>
             </div>

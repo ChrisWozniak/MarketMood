@@ -10,3 +10,4 @@ anthropic>=0.40.0
 pytrends>=4.9.2
 python-multipart>=0.0.9
 Pillow>=10.0.0
+pytest-asyncio>=0.24.0

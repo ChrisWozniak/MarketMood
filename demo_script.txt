@@ -1,0 +1,110 @@
+MARKET MOOD — DEMO SCRIPT (FIRST DRAFT)
+========================================
+Total target time: 2:15 – 3:15
+
+
+────────────────────────────────────────
+SECTION 1: PROBLEM & ROOT CAUSE
+Target: 30–45 seconds
+────────────────────────────────────────
+
+Marcus is a retail investor.
+
+Every morning he checks Reddit, scrolls finance Twitter, skims
+HackerNews, watches CNBC — then tries to decide:
+
+  "Is the mood out there actually bullish or bearish right now?"
+
+The problem isn't a lack of information.
+It's that the signal is buried in noise across a dozen platforms —
+and by the time Marcus pieces it together, the moment has passed.
+
+The root cause:
+No tool connects what people are SAYING to what Marcus should be WATCHING.
+
+Sentiment tools, market signals, and tech momentum all live in
+separate silos.
+
+Marcus is doing the synthesis himself — every day — manually.
+
+
+────────────────────────────────────────
+SECTION 2: SOLUTION & DEMO
+Target: 90–120 seconds
+────────────────────────────────────────
+
+Market Mood is a real-time social sentiment barometer that reads
+the crowd — Reddit, HackerNews, YouTube, prediction markets, and
+economic data — then uses AI to turn that mood into investment
+signals, all in one dashboard.
+
+--- SHOW: Dashboard ---
+
+At a glance, Marcus sees where sentiment is hot and where it's
+cooling — across 9 categories: Economy, Crypto, Tech, Real Estate,
+and more.
+
+--- SHOW: Settings > Custom Watchlist ---
+
+Marcus types in his tickers: NVDA, BTC, ETH.
+
+Now the analysis isn't generic — it's personal to what he owns.
+
+--- CLICK: Run Now ---
+
+The AI is pulling posts from Reddit, HackerNews, YouTube —
+cross-referencing Kalshi and Polymarket prediction markets,
+layering in FRED housing data —
+then Gemini synthesizes it all.
+
+--- SHOW: Results — Barometer rows ---
+
+Here's the Economy bar. One of today's top subtopics:
+"Fed holds rates steady at 4.25%"
+
+--- SHOW: Custom Watchlist row ---
+
+And Marcus's own tickers — right there in the barometer.
+Highlighted in amber so he can't miss them.
+
+--- SHOW: Investment Signals ---
+
+Gemini says: bullish on NVDA.
+Here's why — based on today's tech sentiment and prediction markets.
+
+--- SHOW: Email ---
+
+And Marcus got all of this delivered to his inbox —
+same analysis, formatted report, every morning automatically.
+
+
+────────────────────────────────────────
+SECTION 3: WHAT'S NEXT
+Target: 15–30 seconds
+────────────────────────────────────────
+
+The one feature I'd build next: sentiment shift alerts.
+
+Right now Marcus has to open the app to check.
+But the most valuable moment is when something CHANGES FAST —
+
+  Crypto sentiment swings from +40 to –60 in two hours.
+  A prediction market moves 20 points overnight.
+
+The next step is pushing that signal to Marcus BEFORE he even
+thinks to look — via text or push notification.
+
+That's what turns Market Mood from a dashboard into an
+early warning system.
+
+
+────────────────────────────────────────
+RECORDING TIPS
+────────────────────────────────────────
+
+- Pre-load the app and have a completed run ready before you hit record
+- Click Run Now early, talk over it while it runs, reveal results —
+  no dead air
+- Keep Custom Watchlist tickers visible when scrolling to
+  Investment Signals — the personal connection is the differentiator
+- First draft goal: get it recorded, not perfect

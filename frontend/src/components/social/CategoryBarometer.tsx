@@ -19,6 +19,7 @@ interface Props {
   category: string
   data: MoodData
   signal?: SignalData
+  watchlistTickers?: string[]
 }
 
 function scoreToColor(score: number): string {
@@ -29,23 +30,37 @@ function scoreToColor(score: number): string {
   return '#ef4444'
 }
 
-const SIGNAL_DOT: Record<string, string> = {
-  bullish: 'bg-emerald-400',
-  bearish: 'bg-red-400',
-  neutral: 'bg-slate-400',
+const SIGNAL_BADGE: Record<string, string> = {
+  bullish: 'bg-emerald-950 text-emerald-400 border border-emerald-800',
+  bearish: 'bg-red-950 text-red-400 border border-red-800',
+  neutral: 'bg-slate-800 text-slate-400 border border-slate-700',
 }
 
-export default function CategoryBarometer({ category, data, signal }: Props) {
+const SIGNAL_ICON: Record<string, string> = {
+  bullish: '▲',
+  bearish: '▼',
+  neutral: '●',
+}
+
+export default function CategoryBarometer({ category, data, signal, watchlistTickers }: Props) {
   const [expanded, setExpanded] = useState(false)
 
   const noData = data.score === 0 && data.label === 'Neutral'
     && (!data.dominant_emotions || data.dominant_emotions.length === 0)
 
-  const color    = noData ? '#475569' : scoreToColor(data.score)
-  const position = Math.min(Math.max(((data.score + 100) / 200) * 100, 2), 98)
+  function signalAdjustedScore(score: number, sig?: SignalData): number {
+    if (!sig) return score
+    if (sig.signal === 'bullish') return Math.max(score, 25)
+    if (sig.signal === 'bearish') return Math.min(score, -25)
+    return score
+  }
+
+  const adjusted = noData ? 0 : signalAdjustedScore(data.score, signal)
+  const color    = noData ? '#475569' : scoreToColor(adjusted)
+  const position = Math.min(Math.max(((adjusted + 100) / 200) * 100, 2), 98)
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl">
       <button
         type="button"
         onClick={() => setExpanded(o => !o)}
@@ -55,12 +70,7 @@ export default function CategoryBarometer({ category, data, signal }: Props) {
       >
         {/* Header row */}
         <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-200 text-sm font-semibold">{category}</span>
-            {signal && (
-              <span className={`w-2 h-2 rounded-full shrink-0 ${SIGNAL_DOT[signal.signal]}`} aria-hidden="true" />
-            )}
-          </div>
+          <span className="text-slate-200 text-sm font-semibold">{category}</span>
           <div className="flex items-center gap-2">
             {!noData && (
               <span className="text-sm font-bold font-mono" style={{ color }}>
@@ -68,6 +78,11 @@ export default function CategoryBarometer({ category, data, signal }: Props) {
               </span>
             )}
             <span className="text-slate-400 text-xs">{noData ? 'No data' : data.label}</span>
+            {signal && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium border ${SIGNAL_BADGE[signal.signal]}`}>
+                {SIGNAL_ICON[signal.signal]} Signal
+              </span>
+            )}
             <span
               aria-hidden="true"
               className="text-slate-500 text-xs ml-1 transition-transform duration-200"
@@ -89,18 +104,42 @@ export default function CategoryBarometer({ category, data, signal }: Props) {
 
         {/* Scale labels */}
         <div className="flex justify-between mt-1 px-0.5">
-          <span className="text-red-400 text-xs opacity-50">−100</span>
-          <span className="text-slate-600 text-xs">0</span>
-          <span className="text-green-400 text-xs opacity-50">+100</span>
+          <span className="text-red-500 text-xs">−100</span>
+          <span className="text-slate-500 text-xs">0</span>
+          <span className="text-green-600 text-xs">+100</span>
         </div>
 
         {/* Emotion pills */}
         {!noData && data.dominant_emotions && data.dominant_emotions.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {data.dominant_emotions.slice(0, 4).map(e => (
-              <span key={e} className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full capitalize">
+              <span key={e} className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full capitalize inline-block transition-transform duration-150 hover:scale-125">
                 {e}
               </span>
+            ))}
+          </div>
+        )}
+
+        {/* Watchlist ticker pills — color reflects signal direction */}
+        {watchlistTickers && watchlistTickers.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {watchlistTickers.map(sym => (
+              <a
+                key={sym}
+                href={`https://finance.yahoo.com/quote/${sym}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className={`text-xs font-mono px-2 py-0.5 rounded-full inline-block transition-colors duration-150 hover:text-white ${
+                  signal?.signal === 'bullish'
+                    ? 'bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-600 hover:border-emerald-500'
+                    : signal?.signal === 'bearish'
+                    ? 'bg-red-950/60 border border-red-700/60 text-red-300 hover:bg-red-600 hover:border-red-500'
+                    : 'bg-slate-800/60 border border-slate-600/60 text-slate-300 hover:bg-slate-600 hover:border-slate-500'
+                }`}
+              >
+                {sym}
+              </a>
             ))}
           </div>
         )}
@@ -108,7 +147,7 @@ export default function CategoryBarometer({ category, data, signal }: Props) {
 
       {/* Expandable detail */}
       {expanded && (
-        <div className="border-t border-slate-700">
+        <div className="border-t border-slate-700 overflow-hidden rounded-b-xl">
           <CategoryDetail category={category} data={data} signal={signal} />
         </div>
       )}

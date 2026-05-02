@@ -9,17 +9,6 @@ const HEADER_HEIGHT = 72 // px — sticky header height to offset scroll
 export default function App() {
   const { darkMode, toggleDarkMode, setPanelCollapse } = useStore()
 
-  // Blink the green/red dots in the browser tab every 3 seconds
-  useEffect(() => {
-    const on  = '▲🟢 Market Mood 🔴▼'
-    const off = '▲🟠 Market Mood 🟣▼'
-    let show = true
-    const id = setInterval(() => {
-      show = !show
-      document.title = show ? on : off
-    }, 3000)
-    return () => clearInterval(id)
-  }, [])
   const [collapsed, setCollapsed] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
@@ -37,8 +26,8 @@ export default function App() {
     if (!ref.current) return
     const top = ref.current.getBoundingClientRect().top + window.scrollY - HEADER_HEIGHT - 12
     window.scrollTo({ top, behavior: 'smooth' })
-    // Move focus to target so keyboard users land in the right place
-    ref.current.focus()
+    // Delay focus until after smooth scroll finishes so it doesn't cancel the scroll
+    setTimeout(() => ref.current?.focus(), 500)
   }
 
   const scrollToSettings = () => {
@@ -49,7 +38,6 @@ export default function App() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    mainRef.current?.focus()
   }
 
   const toggleAllPanels = () => {
@@ -71,11 +59,13 @@ export default function App() {
 
       <Toaster
         position="top-right"
-        containerProps={{ role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' }}
         toastOptions={{
-          style: { background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' },
-          success: { iconTheme: { primary: '#22c55e', secondary: '#1e293b' } },
-          error:   { iconTheme: { primary: '#ef4444', secondary: '#1e293b' }, duration: 5000 },
+          style: darkMode
+            ? { background: '#1e293b', color: '#f1f5f9', border: '1px solid #334155' }
+            : { background: '#fdf7ee', color: '#2c1f12', border: '1px solid #e5d5b8',
+                boxShadow: '0 4px 12px rgba(100,60,10,0.12)' },
+          success: { iconTheme: { primary: '#15803d', secondary: darkMode ? '#1e293b' : '#fdf7ee' } },
+          error:   { iconTheme: { primary: '#b91c1c', secondary: darkMode ? '#1e293b' : '#fdf7ee' }, duration: 5000 },
         }}
       />
 

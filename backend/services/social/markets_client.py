@@ -32,8 +32,8 @@ KALSHI_SERIES = [
     "KXECON",         # Economy topics
     "KXWARMING",      # Climate / temperature
     "KXAI",           # AI topics
-    # Excluded: KXBTC, KXETH, KXSP500, KXNASDAQ — short-term daily price ranges
-    # always resolve near 0% or 100% (too specific), filtered out by the price filter
+    "KXBTC",          # Bitcoin price milestones (longer-horizon markets pass the 2-98% filter)
+    "KXETH",          # Ethereum price milestones
 ]
 
 # Keywords that indicate a market is sports/entertainment and should be excluded.
@@ -43,17 +43,21 @@ EXCLUDE_KEYWORDS: list[str] = [
     " vs.", " vs ",
     # Sports leagues and events
     "nfl", "nba", "nhl", "mlb", "fifa", "mls", "premier league",
+    "bundesliga", "la liga", "serie a", "ligue 1",
     "soccer", "football", "basketball", "baseball", "tennis", "golf",
-    "ufc", "boxing", "olympic", "super bowl", "world series",
-    "playoffs", "roster", "transfer", "draft pick",
+    "ufc", "boxing", "olympic", "super bowl", "world series", "world cup",
+    "playoffs", "roster", "transfer", "draft pick", "championship game",
+    "win the ", "score in ", "total points", "first to score",
+    "hat trick", "touchdowns", "yards gained", "innings",
     # Esports
     "counter-strike", "cs2", "csgo", "dota", "league of legends",
     "valorant", "overwatch", "starcraft", "fortnite", "esport",
     "iem", "esl", "blast", "major tournament", "group stage",
-    # Entertainment
+    # Entertainment / celebrity
     "oscars", "emmy", "grammy", "academy award", "box office",
     "album", "kardashian", "taylor swift", "beyonce", "drake",
     "reality show", "streaming series", "movie gross",
+    "ticket sales", "concert tour", "chart position",
 ]
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
@@ -62,22 +66,27 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "unemployment", "jobs report", "s&p 500", "dow jones", "nasdaq", "stock market",
         "oil price", "gold price", "dollar", "debt ceiling", "deficit", "tariff",
         "trade war", "cpi", "pce", "treasury", "yield curve", "mortgage rate",
+        "earnings", "ipo", "market cap", "hedge fund", "etf", "bond yield",
     ],
     "Politics": [
         "election", "president", "trump", "biden", "harris", "congress", "senate",
         "house of representatives", "republican", "democrat", "vote", "ballot",
         "impeach", "white house", "governor", "primary", "approval rating",
         "supreme court", "legislation", "executive order", "cabinet",
+        "filibuster", "veto", "inauguration", "administration", "policy",
     ],
     "Technology & AI": [
         "artificial intelligence", "openai", "chatgpt", "gpt", "llm", "large language",
         "apple", "google", "microsoft", "meta", "amazon", "nvidia", "semiconductor",
         "spacex", "starship", "self-driving", "autonomous", "robotics",
+        "tech company", "antitrust tech", "doge", "department of government",
+        "data center", "chip", "quantum", "cybersecurity", "hack",
     ],
     "Blockchain & Crypto": [
         "bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain", "defi",
         "nft", "solana", "binance", "coinbase", "web3", "stablecoin", "altcoin",
-        "btc", "eth", "sec crypto", "crypto regulation",
+        "btc", "eth", "sec crypto", "crypto regulation", "digital asset",
+        "ripple", "xrp", "dogecoin", "tether", "usdc",
     ],
     "World Affairs": [
         "war", "ukraine", "russia", "china", "nato", "israel", "iran", "north korea",
@@ -90,16 +99,30 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "Real Estate": [
         "housing market", "home price", "mortgage", "real estate", "fed rate housing",
         "rent", "redfin", "zillow", "housing starts", "inventory",
+        "home sales", "median price", "foreclosure", "eviction",
+    ],
+    "Health & Science": [
+        "fda", "drug approval", "vaccine", "pandemic", "covid", "cancer",
+        "climate", "hurricane", "earthquake", "wildfire", "flood",
+        "nasa", "space mission", "asteroid", "moon", "mars",
+        "cdc", "nih", "medical", "treatment", "health care", "healthcare",
+        "disease", "outbreak", "public health", "prescription",
+    ],
+    "Sector Sentiment": [
+        "energy sector", "oil company", "natural gas", "renewable energy", "solar",
+        "wind power", "bank earnings", "financial sector", "retail sales",
+        "consumer spending", "automotive", "airline", "shipping company",
+        "pharmaceutical", "biotech", "mining", "steel", "agriculture",
     ],
 }
 
 
-def _infer_category(text: str) -> str:
+def _infer_category(text: str) -> str | None:
     lower = text.lower()
     for category, keywords in CATEGORY_KEYWORDS.items():
         if any(kw in lower for kw in keywords):
             return category
-    return "General"
+    return None  # not relevant to any app category — will be dropped
 
 
 def _is_relevant(text: str) -> bool:
@@ -167,10 +190,14 @@ async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[d
                 volume = float(m.get("open_interest_fp") or 0)
 
             # Skip markets with negligible activity (< 50 contracts / dollars)
-            if volume < 50:
+            if volume < 1_000:
                 continue
 
             if not _is_relevant(title):
+                continue
+
+            category = _infer_category(title)
+            if category is None:
                 continue
 
             results.append({
@@ -179,12 +206,15 @@ async def _fetch_kalshi_series(client: httpx.AsyncClient, series: str) -> list[d
                 "yes_pct": round(yes_pct, 1),
                 "no_pct": round(no_pct, 1),
                 "volume_usd": round(volume, 0),
-                "category": _infer_category(title),
+                "category": category,
             })
         except (TypeError, ValueError):
             continue
 
-    return results
+    # One market per series — pick the most uncertain (closest to 50% = most informative),
+    # breaking ties by highest volume. Applies equally to every series; nothing is hardcoded.
+    results.sort(key=lambda m: (abs(m["yes_pct"] - 50), -m["volume_usd"]))
+    return results[:1]
 
 
 async def _fetch_kalshi(client: httpx.AsyncClient) -> list[dict]:
@@ -193,7 +223,7 @@ async def _fetch_kalshi(client: httpx.AsyncClient) -> list[dict]:
     results_per_series = await asyncio.gather(*tasks)
     all_markets: list[dict] = [m for batch in results_per_series for m in batch]
 
-    # Deduplicate by question text (some series overlap)
+    # Deduplicate by question text in case series overlap
     seen: set[str] = set()
     unique = []
     for m in all_markets:
@@ -207,11 +237,12 @@ async def _fetch_kalshi(client: httpx.AsyncClient) -> list[dict]:
 
 
 async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
-    """Fetch top active markets from Polymarket sorted by 24h volume."""
+    """Fetch top active markets from Polymarket sorted by total volume."""
     try:
+        # Use total lifetime volume — volume24hr is often 0 on gamma-api
         resp = await client.get(
             POLYMARKET_URL,
-            params={"closed": "false", "limit": 30, "order": "volume24hr", "ascending": "false"},
+            params={"closed": "false", "limit": 100, "order": "volume", "ascending": "false"},
             timeout=TIMEOUT,
         )
         if resp.status_code != 200:
@@ -222,6 +253,8 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
     except Exception as e:
         _print(f"[markets_client] Polymarket fetch failed: {e}")
         return []
+
+    _print(f"[markets_client] Polymarket raw: {len(markets)} markets fetched")
 
     results = []
     for m in markets:
@@ -244,11 +277,16 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
             if yes_pct < 2 or yes_pct > 98:
                 continue
 
-            volume = float(m.get("volume24hr") or m.get("volume") or m.get("liquidity") or 0)
-            if volume < 100:
+            # Total volume chain: prefer volume, then liquidity, then volume24hr
+            volume = float(m.get("volume") or m.get("volumeNum") or m.get("liquidity") or m.get("volume24hr") or 0)
+            if volume < 1_000:
                 continue
 
             if not _is_relevant(question):
+                continue
+
+            category = _infer_category(question)
+            if category is None:
                 continue
 
             results.append({
@@ -257,16 +295,16 @@ async def _fetch_polymarket(client: httpx.AsyncClient) -> list[dict]:
                 "yes_pct": round(yes_pct, 1),
                 "no_pct": round(no_pct, 1),
                 "volume_usd": round(volume, 0),
-                "category": _infer_category(question),
+                "category": category,
             })
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
 
-    _print(f"[markets_client] Polymarket: {len(results)} markets")
+    _print(f"[markets_client] Polymarket: {len(results)} markets after filtering")
     return results
 
 
-async def fetch_top_markets(top_n: int = 10) -> list[dict]:
+async def fetch_top_markets(top_n: int = 12) -> list[dict]:
     """
     Fetch and merge markets from Kalshi and Polymarket.
     Takes top N/2 from each source (sorted by their own volume) then interleaves,

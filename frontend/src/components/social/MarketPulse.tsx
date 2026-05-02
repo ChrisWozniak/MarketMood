@@ -15,12 +15,14 @@ interface Market {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Economy & Finance': '#22c55e',
+  'Economy':           '#22c55e',
   'Politics':          '#f59e0b',
   'Technology & AI':   '#6366f1',
+  'Blockchain & Crypto': '#f97316',
   'World Affairs':     '#0ea5e9',
+  'Real Estate':       '#10b981',
   'Health & Science':  '#ec4899',
-  'General':           '#94a3b8',
+  'Sector Sentiment':  '#a78bfa',
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -149,29 +151,36 @@ export default function MarketPulse({ collapsed = false, onToggleCollapse }: Pro
                 const color = CATEGORY_COLORS[m.category] || '#94a3b8'
                 return (
                   <div key={i} className="bg-slate-700 border border-slate-600 rounded-xl p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{
-                            background: (SOURCE_COLORS[m.source] || '#94a3b8') + '33',
-                            color: SOURCE_COLORS[m.source] || '#94a3b8',
-                          }}
-                        >
-                          {m.source}
-                        </span>
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          style={{ background: color + '28', color }}
-                        >
-                          {m.category}
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-300 shrink-0">{fmtVolume(m.volume_usd)} traded</span>
+                    {/* Row 1: source + category badges */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <span
+                        className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                        style={{
+                          background: (SOURCE_COLORS[m.source] || '#94a3b8') + '33',
+                          color: SOURCE_COLORS[m.source] || '#94a3b8',
+                        }}
+                      >
+                        {m.source}
+                      </span>
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-full"
+                        style={{ background: color + '28', color }}
+                      >
+                        {m.category}
+                      </span>
                     </div>
 
+                    {/* Row 2: question */}
                     <p className="text-slate-200 text-sm leading-relaxed mb-3">{m.question}</p>
 
+                    {/* Row 3: betting volume — prominent second metric */}
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <span className="text-slate-400 text-xs">💰</span>
+                      <span className="text-sm font-bold" style={{ color }}>{fmtVolume(m.volume_usd)}</span>
+                      <span className="text-slate-400 text-xs">in active bets</span>
+                    </div>
+
+                    {/* Row 4: YES/NO probability bar */}
                     <div className="flex items-center gap-2">
                       <span className="text-green-400 text-xs font-bold w-14 shrink-0">YES {m.yes_pct.toFixed(0)}%</span>
                       <div className="flex-1 h-2 bg-slate-600 rounded-full overflow-hidden">

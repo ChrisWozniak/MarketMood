@@ -4,7 +4,11 @@ const api = axios.create({ baseURL: '/api' })
 
 // ── Sentiment / Barometer ──────────────────────────────────────────────────
 // Trigger full social analysis + Gemini scoring (slow — 30–90s)
-export const analyzeSentiment = () => api.post('/sentiment/analyze').then(r => r.data)
+export const analyzeSentiment = (customTickers?: string[], theme?: string) =>
+  api.post('/sentiment/analyze', {
+    ...(customTickers?.length ? { custom_tickers: customTickers } : {}),
+    ...(theme ? { theme } : {}),
+  }).then(r => r.data)
 // Latest barometer scores + trending topics for all categories
 export const getLatestSentiment = () => api.get('/sentiment/latest').then(r => r.data)
 // Recent snapshots for momentum tracking (default last 24)
@@ -23,9 +27,22 @@ export const getMarkets = () => api.get('/social/markets').then(r => r.data)
 // Refresh market data only (fast)
 export const refreshMarkets = () => api.post('/social/markets/refresh').then(r => r.data)
 
-// ── Settings ───────────────────────────────────────────────────────────────
+// ── Settings — Schedule ────────────────────────────────────────────────────
 export const updateSchedule = (minutes: number) =>
   api.post('/settings/schedule', { minutes }).then(r => r.data)
+
+// ── Settings — Email Distribution ──────────────────────────────────────────
+export interface EmailConfigPayload {
+  enabled: boolean
+  smtp_sender: string
+  smtp_password: string
+  recipients: string[]
+  email_theme?: string
+}
+export const getEmailConfig = () => api.get('/settings/email').then(r => r.data)
+export const saveEmailConfig = (config: EmailConfigPayload) =>
+  api.post('/settings/email', config).then(r => r.data)
+export const sendTestEmail = () => api.post('/settings/email/test').then(r => r.data)
 
 // ── Health ─────────────────────────────────────────────────────────────────
 export const getHealth = () => api.get('/health').then(r => r.data)

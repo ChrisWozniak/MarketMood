@@ -12,7 +12,7 @@ from services.social.markets_client import fetch_top_markets
 from services.social.fred_client import fetch_fred_housing
 from services.social.redfin_client import fetch_redfin_stats
 from services.social.trend_analyzer import build_trend_history, rank_trending_topics
-from services.social.mood_scorer import score_all_moods, extract_all_sub_topics
+from services.social.mood_scorer import score_all_moods, extract_all_sub_topics, score_watchlist_mood
 
 
 def _merge_platforms(*platform_dicts: dict[str, list[dict]]) -> dict[str, list[dict]]:
@@ -30,7 +30,7 @@ def _merge_platforms(*platform_dicts: dict[str, list[dict]]) -> dict[str, list[d
     return merged
 
 
-async def run_social_analysis() -> SocialSnapshot:
+async def run_social_analysis(custom_tickers: list[str] | None = None, run_type: str = "Scheduled", theme: str = "dark") -> SocialSnapshot:
     """Full pipeline: collect -> analyze -> save -> return snapshot."""
     print("[aggregator] Starting social analysis...")
 
@@ -44,7 +44,7 @@ async def run_social_analysis() -> SocialSnapshot:
         loop.run_in_executor(None, fetch_youtube_videos, 5),
         timeout=30.0,
     )
-    markets_task = fetch_top_markets(10)
+    markets_task = fetch_top_markets(12)
     fred_task    = fetch_fred_housing()
     redfin_task  = fetch_redfin_stats()
 
@@ -95,6 +95,12 @@ async def run_social_analysis() -> SocialSnapshot:
     top_categories = [item["category"] for item in ranked_topics[:4]]
     mood_scores = await score_all_moods(merged, scored_categories=top_categories)
 
+    # Score watchlist mood if custom tickers were provided
+    if custom_tickers:
+        watchlist_mood = await score_watchlist_mood(custom_tickers, merged)
+        mood_scores["Custom Watchlist"] = watchlist_mood
+        print(f"[aggregator] Custom Watchlist mood: score={watchlist_mood.get('score')}, label={watchlist_mood.get('label')}")
+
     # 5. Extract sub-topics sequentially (small model, avoids rate limit burst)
     sub_topic_map = await extract_all_sub_topics(ranked_topics, merged)
 
@@ -123,6 +129,7 @@ async def run_social_analysis() -> SocialSnapshot:
         ranked_topics,
         prediction_markets=market_data,
         housing_data=housing_data,
+        custom_tickers=custom_tickers,
     )
     tech_momentum = await generate_tech_momentum(ranked_topics)
 
@@ -155,4 +162,21 @@ async def run_social_analysis() -> SocialSnapshot:
 
     print(f"[aggregator] Done: {len(ranked_topics)} topics, "
           f"{len(mood_scores)} mood scores, {len(market_data)} markets")
+
+    # 9. Send email report (non-blocking — failure does not affect the snapshot)
+    try:
+        from services.email_sender import send_report_email
+        await send_report_email(
+            mood_scores=mood_scores,
+            trending_topics=ranked_topics,
+            investment_signals=investment_signals,
+            prediction_markets=market_data,
+            merged_posts=merged,
+            captured_at=snapshot.captured_at,
+            run_type=run_type,
+            theme=theme,
+        )
+    except Exception as e:
+        print(f"[aggregator] Email send skipped: {e}")
+
     return snapshot

@@ -86,7 +86,7 @@ async def refresh_markets(session: Session = Depends(get_session)):
     from models import MarketSnapshot
     from datetime import datetime
     try:
-        markets = await fetch_top_markets(10)
+        markets = await fetch_top_markets(12)
         snapshot = MarketSnapshot(
             captured_at=datetime.utcnow(),
             markets_json=json.dumps(markets),

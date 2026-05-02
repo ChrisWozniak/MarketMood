@@ -1,5 +1,6 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from database import get_session
 from models import SocialSnapshot
@@ -7,12 +8,20 @@ from models import SocialSnapshot
 router = APIRouter()
 
 
+class AnalyzeRequest(BaseModel):
+    custom_tickers: list[str] | None = None
+    theme: str = "dark"
+
+
 @router.post("/analyze")
-async def analyze(session: Session = Depends(get_session)):
+async def analyze(
+    req: AnalyzeRequest = Body(default_factory=AnalyzeRequest),
+    session: Session = Depends(get_session),
+):
     """Trigger a fresh social analysis and return barometer scores per category."""
     from services.social.aggregator import run_social_analysis
     try:
-        snapshot = await run_social_analysis()
+        snapshot = await run_social_analysis(custom_tickers=req.custom_tickers, run_type="Manual", theme=req.theme)
         return {
             "status": "success",
             "captured_at": snapshot.captured_at.isoformat(),

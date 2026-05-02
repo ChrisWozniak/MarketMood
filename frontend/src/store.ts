@@ -11,12 +11,19 @@ interface AppStore {
   setPanelCollapse: (v: boolean | null) => void
 }
 
+const savedDark = localStorage.getItem('mm_dark_mode')
+const initDark = savedDark !== null ? savedDark === 'true' : false
+
+document.documentElement.classList.toggle('light', !initDark)
+document.body.style.background = initDark ? '#0f172a' : '#f4ead8'
+
 export const useStore = create<AppStore>((set) => ({
-  darkMode: true,
+  darkMode: initDark,
   toggleDarkMode: () => set((s) => {
     const next = !s.darkMode
     document.documentElement.classList.toggle('light', !next)
-    document.body.style.background = next ? '#0f172a' : '#f0f4f8'
+    document.body.style.background = next ? '#0f172a' : '#f4ead8'
+    localStorage.setItem('mm_dark_mode', String(next))
     return { darkMode: next }
   }),
   loading: {},

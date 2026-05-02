@@ -16,11 +16,11 @@ const DIRECTION_STYLES = {
 function MomentumItem({ item }: { item: TechMomentumItem }) {
   const dir = DIRECTION_STYLES[item.direction]
   return (
-    <div className="space-y-1.5 py-3 border-b border-slate-800 last:border-0">
+    <div className="group space-y-1.5 py-3 border-b border-slate-800 last:border-0 transition-all duration-200 cursor-default">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className={`text-base font-bold ${dir.color}`} aria-hidden="true">{dir.icon}</span>
-          <span className="text-slate-200 font-medium text-sm">{item.technology}</span>
+          <span className="text-slate-200 font-medium text-sm transition-all duration-200 group-hover:text-base">{item.technology}</span>
           <span className={`text-xs ${dir.color}`}>
             {item.direction.charAt(0).toUpperCase() + item.direction.slice(1)}
           </span>
@@ -40,18 +40,30 @@ function MomentumItem({ item }: { item: TechMomentumItem }) {
         />
       </div>
 
-      <p className="text-slate-400 text-xs leading-relaxed">{item.insight}</p>
+      <p className="text-slate-400 text-xs leading-relaxed transition-all duration-200 group-hover:text-sm group-hover:text-slate-200">{item.insight}</p>
 
       <div className="flex gap-1 flex-wrap">
         {item.proxy_tickers.map(t => (
-          <span key={t} className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
+          <a
+            key={t}
+            href={`https://finance.yahoo.com/quote/${t}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded hover:bg-indigo-600 hover:text-white transition-colors duration-150"
+          >
             {t}
-          </span>
+          </a>
         ))}
         {item.key_companies.map(c => (
-          <span key={c} className="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded">
+          <a
+            key={c}
+            href={`https://finance.yahoo.com/lookup?s=${encodeURIComponent(c)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-colors duration-150"
+          >
             {c}
-          </span>
+          </a>
         ))}
       </div>
     </div>

@@ -16,7 +16,7 @@ load_dotenv()
 
 from database import create_db_and_tables
 from services.scheduler import scheduler, start_social_schedule
-from routers import sentiment, signals, social
+from routers import sentiment, signals, social, settings as settings_router
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
@@ -40,9 +40,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(sentiment.router, prefix="/api/sentiment", tags=["sentiment"])
-app.include_router(signals.router,   prefix="/api/signals",   tags=["signals"])
-app.include_router(social.router,    prefix="/api/social",    tags=["social"])
+app.include_router(sentiment.router,       prefix="/api/sentiment", tags=["sentiment"])
+app.include_router(signals.router,         prefix="/api/signals",   tags=["signals"])
+app.include_router(social.router,          prefix="/api/social",    tags=["social"])
+app.include_router(settings_router.router, prefix="/api/settings",  tags=["settings"])
 
 
 @app.get("/api/health")
