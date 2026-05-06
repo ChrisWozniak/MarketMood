@@ -1,6 +1,16 @@
 import axios from 'axios'
 
+const ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY ?? ''
+
 const api = axios.create({ baseURL: '/api' })
+
+// Attach admin key to all mutating requests (POST/PUT/PATCH/DELETE)
+api.interceptors.request.use(config => {
+  if (ADMIN_KEY && config.method !== 'get') {
+    config.headers['X-API-Key'] = ADMIN_KEY
+  }
+  return config
+})
 
 // ── Sentiment / Barometer ──────────────────────────────────────────────────
 // Trigger full social analysis + Gemini scoring (slow — 30–90s)

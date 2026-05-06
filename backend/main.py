@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 import os
 import sys
@@ -17,8 +19,10 @@ load_dotenv()
 from database import create_db_and_tables
 from services.scheduler import scheduler, start_social_schedule
 from routers import sentiment, signals, social, settings as settings_router
+from dependencies import limiter, require_admin_key
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+PUBLIC_FRONTEND_URL = os.getenv("PUBLIC_FRONTEND_URL", "")
 
 
 @asynccontextmanager
@@ -32,9 +36,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Market Mood API", version="1.0.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_origins = [FRONTEND_URL, "http://localhost:5173", "http://localhost:4173"]
+if PUBLIC_FRONTEND_URL:
+    _origins.append(PUBLIC_FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:5173", "http://localhost:4173"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,12 +58,14 @@ app.include_router(settings_router.router, prefix="/api/settings",  tags=["setti
 
 
 @app.get("/api/health")
-def health():
+@limiter.limit("60/minute")
+def health(request: Request):
     return {"status": "ok"}
 
 
-@app.post("/api/settings/schedule")
-def update_schedule(body: dict):
+@app.post("/api/settings/schedule", dependencies=[Depends(require_admin_key)])
+@limiter.limit("10/minute")
+def update_schedule(request: Request, body: dict):
     minutes = int(body.get("minutes", 60))
     if minutes < 5 or minutes > 1440:
         from fastapi import HTTPException

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from services.email_sender import load_email_config, save_email_config
+from dependencies import limiter, require_admin_key
 
 router = APIRouter()
 
@@ -13,8 +14,9 @@ class EmailConfig(BaseModel):
     email_theme: str = "dark"
 
 
-@router.get("/email")
-def get_email_config():
+@router.get("/email", dependencies=[Depends(require_admin_key)])
+@limiter.limit("10/minute")
+def get_email_config(request: Request):
     """Return email distribution config (password masked)."""
     cfg = load_email_config()
     masked = dict(cfg)
@@ -26,8 +28,9 @@ def get_email_config():
     return masked
 
 
-@router.post("/email")
-def save_email(config: EmailConfig):
+@router.post("/email", dependencies=[Depends(require_admin_key)])
+@limiter.limit("10/minute")
+def save_email(request: Request, config: EmailConfig):
     """Save email distribution settings."""
     existing = load_email_config()
     password = config.smtp_password
@@ -44,8 +47,9 @@ def save_email(config: EmailConfig):
     return {"status": "ok", "recipient_count": len(recipients)}
 
 
-@router.post("/email/test")
-async def test_email():
+@router.post("/email/test", dependencies=[Depends(require_admin_key)])
+@limiter.limit("5/minute")
+async def test_email(request: Request):
     """Send a test email using current saved configuration."""
     from datetime import datetime
     from services.email_sender import send_report_email

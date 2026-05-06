@@ -1,14 +1,16 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from database import get_session
 from models import SocialSnapshot, MarketSnapshot
+from dependencies import limiter, require_admin_key
 
 router = APIRouter()
 
 
-@router.post("/analyze")
-async def analyze(session: Session = Depends(get_session)):
+@router.post("/analyze", dependencies=[Depends(require_admin_key)])
+@limiter.limit("5/minute")
+async def analyze(request: Request, session: Session = Depends(get_session)):
     """Trigger a fresh social media analysis."""
     from services.social.aggregator import run_social_analysis
     try:
@@ -19,7 +21,8 @@ async def analyze(session: Session = Depends(get_session)):
 
 
 @router.get("/latest")
-def get_latest(session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_latest(request: Request, session: Session = Depends(get_session)):
     """Return the most recent social snapshot."""
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(1)
@@ -36,7 +39,8 @@ def get_latest(session: Session = Depends(get_session)):
 
 
 @router.get("/trends/{topic}")
-def get_trend(topic: str, session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_trend(request: Request, topic: str, session: Session = Depends(get_session)):
     """Get 30-day trend history for a specific topic."""
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(30)
@@ -54,7 +58,8 @@ def get_trend(topic: str, session: Session = Depends(get_session)):
 
 
 @router.get("/mood")
-def get_mood(session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_mood(request: Request, session: Session = Depends(get_session)):
     """Return current mood indicators."""
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(1)
@@ -65,7 +70,8 @@ def get_mood(session: Session = Depends(get_session)):
 
 
 @router.get("/markets")
-def get_markets(session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_markets(request: Request, session: Session = Depends(get_session)):
     """Return the most recent prediction market snapshot."""
     snapshots = session.exec(
         select(MarketSnapshot).order_by(MarketSnapshot.id.desc()).limit(1)
@@ -79,13 +85,13 @@ def get_markets(session: Session = Depends(get_session)):
     }
 
 
-@router.post("/markets/refresh")
-async def refresh_markets(session: Session = Depends(get_session)):
+@router.post("/markets/refresh", dependencies=[Depends(require_admin_key)])
+@limiter.limit("10/minute")
+async def refresh_markets(request: Request, session: Session = Depends(get_session)):
     """Fetch fresh market data from Kalshi + Polymarket only (fast, no social analysis)."""
-    from services.social.markets_client import fetch_top_markets
-    from models import MarketSnapshot
     from datetime import datetime
     try:
+        from services.social.markets_client import fetch_top_markets
         markets = await fetch_top_markets(12)
         snapshot = MarketSnapshot(
             captured_at=datetime.utcnow(),
@@ -106,7 +112,8 @@ async def refresh_markets(session: Session = Depends(get_session)):
 
 
 @router.get("/history")
-def get_history(limit: int = 10, session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_history(request: Request, limit: int = 10, session: Session = Depends(get_session)):
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(limit)
     ).all()

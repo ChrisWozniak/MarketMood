@@ -1,9 +1,10 @@
 import json
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from database import get_session
 from models import SocialSnapshot
+from dependencies import limiter, require_admin_key
 
 router = APIRouter()
 
@@ -13,8 +14,10 @@ class AnalyzeRequest(BaseModel):
     theme: str = "dark"
 
 
-@router.post("/analyze")
+@router.post("/analyze", dependencies=[Depends(require_admin_key)])
+@limiter.limit("5/minute")
 async def analyze(
+    request: Request,
     req: AnalyzeRequest = Body(default_factory=AnalyzeRequest),
     session: Session = Depends(get_session),
 ):
@@ -33,7 +36,8 @@ async def analyze(
 
 
 @router.get("/latest")
-def get_latest(session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_latest(request: Request, session: Session = Depends(get_session)):
     """Return the latest barometer scores for all categories."""
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(1)
@@ -50,7 +54,8 @@ def get_latest(session: Session = Depends(get_session)):
 
 
 @router.get("/history")
-def get_history(limit: int = 10, session: Session = Depends(get_session)):
+@limiter.limit("60/minute")
+def get_history(request: Request, limit: int = 10, session: Session = Depends(get_session)):
     """Return recent snapshot history for momentum tracking."""
     snapshots = session.exec(
         select(SocialSnapshot).order_by(SocialSnapshot.id.desc()).limit(limit)
